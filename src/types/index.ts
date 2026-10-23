@@ -61,7 +61,7 @@ export interface WorkspaceState {
   lastUpdatedAt: number;
 }
 
-export type ConsoleMessageType = 'log' | 'info' | 'warn' | 'error' | 'system';
+export type ConsoleMessageType = 'log' | 'info' | 'warn' | 'error' | 'system' | 'input';
 
 export interface ConsoleMessage {
   id: string;

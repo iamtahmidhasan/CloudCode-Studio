@@ -7,6 +7,7 @@ export interface ExecutionAdapter {
     onMessage?: (msg: ConsoleMessage) => void
   ): Promise<ExecutionResult>;
   cancel?(): void;
+  sendInput?(text: string): void;
 }
 
 export type { ConsoleMessage, ExecutionResult };

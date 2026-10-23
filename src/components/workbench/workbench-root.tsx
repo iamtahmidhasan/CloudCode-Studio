@@ -67,12 +67,25 @@ export function WorkbenchRoot() {
     messages: consoleMessages,
     executionTime,
     previewDoc,
+    pendingInputPrompt,
+    sendInput,
     runCode,
     cancelExecution,
     clearConsole,
   } = useExecution();
 
   const { isMobile } = useMediaQuery();
+
+  // Automatically open panel & switch to output when interactive input is requested
+  useEffect(() => {
+    if (pendingInputPrompt) {
+      if (isMobile) {
+        updateWorkspace({ activePanel: 'output' });
+      } else {
+        updateWorkspace({ isBottomPanelOpen: true, bottomPanelTab: 'output' });
+      }
+    }
+  }, [pendingInputPrompt, isMobile, updateWorkspace]);
 
   const [cursorPos, setCursorPos] = useState<{ line: number; col: number }>({ line: 1, col: 1 });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -395,6 +408,8 @@ export function WorkbenchRoot() {
                     messages={consoleMessages}
                     onClear={clearConsole}
                     executionTime={executionTime}
+                    pendingInputPrompt={pendingInputPrompt}
+                    onSubmitInput={sendInput}
                   />
                 </div>
               )}
@@ -607,6 +622,8 @@ export function WorkbenchRoot() {
                             messages={consoleMessages}
                             onClear={clearConsole}
                             executionTime={executionTime}
+                            pendingInputPrompt={pendingInputPrompt}
+                            onSubmitInput={sendInput}
                           />
                         )
                       ) : (
@@ -650,6 +667,8 @@ export function WorkbenchRoot() {
                               messages={consoleMessages}
                               onClear={clearConsole}
                               executionTime={executionTime}
+                              pendingInputPrompt={pendingInputPrompt}
+                              onSubmitInput={sendInput}
                             />
                           </div>
                         </div>

@@ -10,6 +10,7 @@ export function useExecution() {
   const [messages, setMessages] = useState<ConsoleMessage[]>([]);
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [previewDoc, setPreviewDoc] = useState<string>('');
+  const [pendingInputPrompt, setPendingInputPrompt] = useState<string | null>(null);
 
   // Handle messages from the preview iframe
   useEffect(() => {
@@ -43,6 +44,7 @@ export function useExecution() {
       if (!activeFile) return;
 
       setStatus('running');
+      setPendingInputPrompt(null);
 
       // If active language is HTML/CSS/JS, generate fresh preview document
       if (['html', 'css', 'javascript'].includes(activeFile.language)) {
@@ -55,15 +57,21 @@ export function useExecution() {
           files,
           activeFile,
           (msg) => {
+            if (msg.type === 'input') {
+              setPendingInputPrompt(msg.args[0] || 'Enter input:');
+              return;
+            }
             setMessages((prev) => [...prev, msg]);
           }
         );
 
+        setPendingInputPrompt(null);
         setStatus(result.success ? 'success' : 'error');
         if (result.executionTimeMs !== undefined) {
           setExecutionTime(result.executionTimeMs);
         }
       } catch (err: unknown) {
+        setPendingInputPrompt(null);
         const errMsg = err instanceof Error ? err.message : String(err);
         setStatus('error');
         setMessages((prev) => [
@@ -80,8 +88,14 @@ export function useExecution() {
     []
   );
 
+  const sendInput = useCallback((text: string) => {
+    ExecutionManager.sendInput(text);
+    setPendingInputPrompt(null);
+  }, []);
+
   const cancelExecution = useCallback(() => {
     ExecutionManager.cancelCurrent();
+    setPendingInputPrompt(null);
     setStatus('idle');
     setMessages((prev) => [
       ...prev,
@@ -99,6 +113,8 @@ export function useExecution() {
     messages,
     executionTime,
     previewDoc,
+    pendingInputPrompt,
+    sendInput,
     runCode,
     cancelExecution,
     clearConsole,

@@ -45,6 +45,14 @@ export class ExecutionManager {
     }
   }
 
+  static sendInput(text: string): void {
+    if (this.currentAdapter && typeof this.currentAdapter.sendInput === 'function') {
+      this.currentAdapter.sendInput(text);
+    } else {
+      this.pythonAdapter.sendInput(text);
+    }
+  }
+
   static cancelCurrent(): void {
     if (this.currentAdapter && typeof this.currentAdapter.cancel === 'function') {
       this.currentAdapter.cancel();
