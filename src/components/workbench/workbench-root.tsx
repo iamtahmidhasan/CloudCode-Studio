@@ -17,9 +17,11 @@ import { MonacoEditorPane } from '../editor/monaco-editor-pane';
 import { WebPreviewPane } from '../preview/web-preview-pane';
 import { OutputPanel } from '../output/output-panel';
 import { SettingsDialog } from '../settings/settings-dialog';
+import { KeyboardShortcutsDialog } from '../settings/keyboard-shortcuts-dialog';
 import { PanelResizer, type ResizeEvent } from './panel-resizer';
 import { WindowsExplorerView, HOME_FOLDER_ID } from '../explorer/windows-explorer-view';
 import { OpenFolderDialog } from '../explorer/open-folder-dialog';
+import { usePwa } from '@/components/pwa/pwa-installer';
 
 import {
   Play,
@@ -36,10 +38,12 @@ import {
   Columns2,
   Rows2,
   X,
+  Download,
 } from 'lucide-react';
 import type { MobileTab } from '@/types';
 
 export function WorkbenchRoot() {
+  const { isInstallable, promptInstall } = usePwa();
   const {
     isInitialized,
     isSaving,
@@ -105,6 +109,8 @@ export function WorkbenchRoot() {
 
   const [cursorPos, setCursorPos] = useState<{ line: number; col: number }>({ line: 1, col: 1 });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const chordRef = useRef<{ chord: string; timestamp: number } | null>(null);
   const [isOpenFolderDialogOpen, setIsOpenFolderDialogOpen] = useState(false);
   const [isExplorerFullscreen, setIsExplorerFullscreen] = useState(false);
   const [fullscreenInitialFolderId, setFullscreenInitialFolderId] = useState<string | null>(HOME_FOLDER_ID);
@@ -129,24 +135,6 @@ export function WorkbenchRoot() {
   const monacoEditorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const workspaceContainerRef = useRef<HTMLDivElement>(null);
   const panelContainerRef = useRef<HTMLDivElement>(null);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+B / Cmd+B: Toggle Sidebar
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
-        e.preventDefault();
-        updateWorkspace({ isSidebarOpen: !workspace.isSidebarOpen });
-      }
-      // Ctrl+` / Cmd+`: Toggle Panel
-      if ((e.ctrlKey || e.metaKey) && e.key === '`') {
-        e.preventDefault();
-        updateWorkspace({ isBottomPanelOpen: !workspace.isBottomPanelOpen });
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [workspace.isSidebarOpen, workspace.isBottomPanelOpen, updateWorkspace]);
 
   // Mobile symbol insertion helper
   const handleInsertSymbol = useCallback((symbol: string) => {
@@ -182,6 +170,123 @@ export function WorkbenchRoot() {
       }
     }
   }, [activeFile, workspaceFiles, rootFolder, runCode, isMobile, updateWorkspace]);
+
+  // Global VS Code keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check chord state: Ctrl+K followed by Ctrl+S (Open Keyboard Shortcuts)
+      if (chordRef.current && Date.now() - chordRef.current.timestamp < 1500) {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+          e.preventDefault();
+          setIsShortcutsOpen(true);
+          chordRef.current = null;
+          return;
+        }
+      }
+
+      // Start chord: Ctrl+K
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        chordRef.current = { chord: 'k', timestamp: Date.now() };
+        return;
+      }
+
+      // Ctrl+S / Cmd+S: Save current file
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (activeFile) {
+          saveNow(activeFile.id, activeFile.content);
+        }
+        return;
+      }
+
+      // Ctrl+Enter / Cmd+Enter: Run code
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleRun();
+        return;
+      }
+
+      // Ctrl+B / Cmd+B: Toggle Sidebar
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        updateWorkspace({ isSidebarOpen: !workspace.isSidebarOpen });
+        return;
+      }
+
+      // Ctrl+` / Cmd+` or Ctrl+J / Cmd+J: Toggle Bottom Terminal / Output Panel
+      if ((e.ctrlKey || e.metaKey) && (e.key === '`' || e.key.toLowerCase() === 'j')) {
+        e.preventDefault();
+        updateWorkspace({ isBottomPanelOpen: !workspace.isBottomPanelOpen });
+        return;
+      }
+
+      // Ctrl+P / Cmd+P: Quick Open / Explorer (intercept browser Print dialog)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p' && !e.shiftKey) {
+        e.preventDefault();
+        handleOpenWindowsExplorer();
+        return;
+      }
+
+      // Ctrl+, / Cmd+,: Open Settings
+      if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+        e.preventDefault();
+        setIsSettingsOpen(true);
+        return;
+      }
+
+      // Ctrl+Shift+P / Cmd+Shift+P or F1: VS Code Command Palette
+      if (((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'p') || e.key === 'F1') {
+        e.preventDefault();
+        if (monacoEditorRef.current) {
+          monacoEditorRef.current.focus();
+          monacoEditorRef.current.trigger('keyboard', 'editor.action.quickCommand', null);
+        }
+        return;
+      }
+
+      // Ctrl+F / Cmd+F: Focus editor & Find
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f' && !e.shiftKey) {
+        if (monacoEditorRef.current) {
+          e.preventDefault();
+          monacoEditorRef.current.focus();
+          monacoEditorRef.current.trigger('keyboard', 'actions.find', null);
+          return;
+        }
+      }
+
+      // Ctrl+H / Cmd+H: Focus editor & Replace
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'h') {
+        if (monacoEditorRef.current) {
+          e.preventDefault();
+          monacoEditorRef.current.focus();
+          monacoEditorRef.current.trigger('keyboard', 'editor.action.startFindReplaceAction', null);
+          return;
+        }
+      }
+
+      // Alt+W or Ctrl+Alt+W: Close active file tab
+      if ((e.altKey && e.key.toLowerCase() === 'w') || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'w')) {
+        e.preventDefault();
+        if (workspace.activeFileId) {
+          closeFileTab(workspace.activeFileId);
+        }
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    workspace.isSidebarOpen,
+    workspace.isBottomPanelOpen,
+    workspace.activeFileId,
+    activeFile,
+    saveNow,
+    handleRun,
+    handleOpenWindowsExplorer,
+    closeFileTab,
+    updateWorkspace,
+  ]);
 
   // Resizing Handlers
   const handleResizeBottom = useCallback(
@@ -292,8 +397,13 @@ export function WorkbenchRoot() {
           <div className="flex items-center gap-1.5 overflow-hidden">
             <Folder className="w-4 h-4 text-[#007acc] shrink-0" />
             <span className="font-bold text-xs text-white truncate max-w-[160px]">
-              {activeProject?.name || 'Project'}
+              {activeWorkspaceName || (activeWorkspaceRootId ? 'Workspace' : 'Home')}
             </span>
+            {activeWorkspaceRootId && (
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#007acc] text-white font-mono uppercase font-bold tracking-wider shrink-0">
+                ROOT
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -313,6 +423,16 @@ export function WorkbenchRoot() {
               <Play className="w-3.5 h-3.5 fill-current" />
               <span>Run</span>
             </button>
+            {isInstallable && (
+              <button
+                type="button"
+                onClick={promptInstall}
+                className="p-1 rounded text-[#38bdf8] hover:text-white hover:bg-[#38bdf8]/20 transition-colors animate-pulse"
+                title="Install Code App (PWA)"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setIsSettingsOpen(true)}
@@ -335,6 +455,7 @@ export function WorkbenchRoot() {
             activeBottomTab={workspace.bottomPanelTab}
             onSelectBottomTab={(tab) => updateWorkspace({ isBottomPanelOpen: true, bottomPanelTab: tab })}
             onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenShortcuts={() => setIsShortcutsOpen(true)}
             onRunCode={handleRun}
           />
         )}
@@ -414,6 +535,14 @@ export function WorkbenchRoot() {
                       onMountEditor={(ed) => {
                         monacoEditorRef.current = ed;
                       }}
+                      onToggleSidebar={() => updateWorkspace({ isSidebarOpen: !workspace.isSidebarOpen })}
+                      onToggleBottomPanel={() => updateWorkspace({ isBottomPanelOpen: !workspace.isBottomPanelOpen })}
+                      onQuickOpen={() => handleOpenWindowsExplorer()}
+                      onOpenSettings={() => setIsSettingsOpen(true)}
+                      onCloseActiveTab={() => {
+                        if (workspace.activeFileId) closeFileTab(workspace.activeFileId);
+                      }}
+                      onOpenShortcuts={() => setIsShortcutsOpen(true)}
                     />
                   </div>
                   {/* Mobile Symbol Accessory Bar */}
@@ -528,6 +657,14 @@ export function WorkbenchRoot() {
                     onMountEditor={(ed) => {
                       monacoEditorRef.current = ed;
                     }}
+                    onToggleSidebar={() => updateWorkspace({ isSidebarOpen: !workspace.isSidebarOpen })}
+                    onToggleBottomPanel={() => updateWorkspace({ isBottomPanelOpen: !workspace.isBottomPanelOpen })}
+                    onQuickOpen={() => handleOpenWindowsExplorer()}
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                    onCloseActiveTab={() => {
+                      if (workspace.activeFileId) closeFileTab(workspace.activeFileId);
+                    }}
+                    onOpenShortcuts={() => setIsShortcutsOpen(true)}
                   />
                 </div>
               </div>
@@ -763,7 +900,7 @@ export function WorkbenchRoot() {
       {/* Desktop / Tablet Status Bar */}
       {!isMobile && (
         <StatusBar
-          projectName={activeProject?.name}
+          projectName={activeWorkspaceName || 'Workspace'}
           language={activeFile?.language}
           cursorLine={cursorPos.line}
           cursorCol={cursorPos.col}
@@ -784,6 +921,12 @@ export function WorkbenchRoot() {
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
         onUpdateSettings={updateSettings}
+      />
+
+      {/* Keyboard Shortcuts Reference Modal */}
+      <KeyboardShortcutsDialog
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
       />
 
       {/* Full-Screen Windows File Explorer View */}

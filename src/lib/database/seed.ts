@@ -6,7 +6,7 @@ export const SEED_TEMPLATES: Record<
   { name: string; description: string; files: Array<{ name: string; path: string; language: FileItem['language']; content: string }> }
 > = {
   web: {
-    name: 'Interactive Web Playground',
+    name: 'CloudCode Studio',
     description: 'HTML5, Modern CSS, and JavaScript with live preview and console logging',
     files: [
       {
@@ -850,6 +850,10 @@ export async function seedInitialDataIfNeeded(): Promise<{ activeProjectId: stri
 
     // Ensure all web projects (and active project) have their dummy folders moved under Home
     for (const proj of allProjects) {
+      if (proj.name === 'Interactive Web Playground') {
+        await db.projects.update(proj.id, { name: 'CloudCode Studio' });
+        proj.name = 'CloudCode Studio';
+      }
       if (proj.template === 'web' || proj.id === activeProject.id) {
         await ensureHomeHierarchyForProject(proj.id);
       }

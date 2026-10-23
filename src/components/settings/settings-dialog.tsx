@@ -11,7 +11,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Trash2, Sun, Moon, Type, Layout, Code, RefreshCw } from 'lucide-react';
+import { Trash2, Sun, Moon, Type, Layout, Code, RefreshCw, Download, CheckCircle, Smartphone } from 'lucide-react';
+import { usePwa } from '@/components/pwa/pwa-installer';
+import Image from 'next/image';
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -28,6 +30,7 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const [confirmClearData, setConfirmClearData] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const { isInstallable, isInstalled, promptInstall } = usePwa();
 
   const handleResetData = async () => {
     setIsResetting(true);
@@ -207,6 +210,50 @@ export function SettingsDialog({
             >
               {settings.autoSaveEnabled ? 'Enabled' : 'Disabled'}
             </button>
+          </div>
+
+          {/* Progressive Web App (PWA) Card */}
+          <div className="pt-2 flex flex-col gap-2 border-t border-[#3c3c3c]">
+            <div className="font-semibold text-white flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Smartphone className="w-4 h-4 text-[#007acc]" />
+                <span>Progressive Web App (PWA)</span>
+              </div>
+              {isInstalled && (
+                <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-medium bg-emerald-950/40 border border-emerald-800/60 px-2 py-0.5 rounded">
+                  <CheckCircle className="w-3 h-3" />
+                  <span>Installed</span>
+                </span>
+              )}
+            </div>
+
+            <div className="p-3 bg-[#1e1e1e] border border-[#3c3c3c] rounded flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-[#252526] flex items-center justify-center border border-[#3c3c3c]">
+                <Image
+                  src="/logo/logo.png"
+                  alt="Code Logo"
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-semibold text-white">Code</div>
+                <div className="text-[10px] text-[#858585]">
+                  Install as a standalone desktop or mobile application with offline support.
+                </div>
+              </div>
+              {isInstallable && (
+                <button
+                  type="button"
+                  onClick={promptInstall}
+                  className="px-2.5 py-1.5 rounded bg-[#007acc] hover:bg-[#0062a3] text-white text-xs font-semibold flex items-center gap-1 shrink-0 transition-colors shadow-sm"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Install</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Clear Local Data (Req 6) */}

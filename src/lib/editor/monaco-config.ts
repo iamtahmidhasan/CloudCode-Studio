@@ -1,7 +1,11 @@
 import type { Monaco } from '@monaco-editor/react';
 import { VSCODE_DARK_PLUS, VSCODE_LIGHT_PLUS } from './monaco-theme';
+import { setupEmmet } from './emmet-provider';
 
 export function initializeMonaco(monaco: Monaco) {
+  // Register Emmet and HTML snippet completion providers (! + Enter/Tab)
+  setupEmmet(monaco);
+
   // Register themes
   monaco.editor.defineTheme('vscode-dark-plus', VSCODE_DARK_PLUS);
   monaco.editor.defineTheme('vscode-light-plus', VSCODE_LIGHT_PLUS);

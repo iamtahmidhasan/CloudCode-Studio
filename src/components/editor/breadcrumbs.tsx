@@ -19,7 +19,6 @@ interface BreadcrumbsProps {
 }
 
 export function Breadcrumbs({
-  project,
   file,
   isSaving,
   activeWorkspaceRootId,
@@ -47,9 +46,7 @@ export function Breadcrumbs({
     return relPath ? relPath.split('/').filter(Boolean) : [file.name];
   }, [file, activeWorkspaceRootId, rootFolderPath]);
 
-  const rootDisplayName = activeWorkspaceRootId
-    ? activeWorkspaceName || 'Workspace'
-    : project?.name || 'Workspace';
+  const rootDisplayName = activeWorkspaceName || 'Workspace';
 
   return (
     <div className="flex items-center justify-between px-3 h-7 bg-[#1e1e1e] border-b border-[#2d2d2d] text-xs text-[#858585] select-none shrink-0">

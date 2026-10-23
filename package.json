@@ -15,6 +15,7 @@
     "cn": "^0.5.0",
     "dexie": "^4.4.6",
     "dexie-react-hooks": "^4.4.0",
+    "emmet-monaco-es": "^5.7.0",
     "jszip": "^3.10.2",
     "lucide-react": "^1.61.0",
     "monaco-editor": "^0.57.0",

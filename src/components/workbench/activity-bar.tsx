@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Files, Play, Globe, Terminal, Settings, FolderOpen } from 'lucide-react';
+import { Files, Play, Globe, Terminal, Settings, FolderOpen, Keyboard, Download } from 'lucide-react';
+import { usePwa } from '@/components/pwa/pwa-installer';
 
 interface ActivityBarProps {
   isSidebarOpen: boolean;
@@ -10,6 +11,7 @@ interface ActivityBarProps {
   activeBottomTab: 'preview' | 'output';
   onSelectBottomTab: (tab: 'preview' | 'output') => void;
   onOpenSettings: () => void;
+  onOpenShortcuts?: () => void;
   onRunCode: () => void;
 }
 
@@ -20,8 +22,11 @@ export function ActivityBar({
   activeBottomTab,
   onSelectBottomTab,
   onOpenSettings,
+  onOpenShortcuts,
   onRunCode,
 }: ActivityBarProps) {
+  const { isInstallable, promptInstall } = usePwa();
+
   return (
     <div className="w-12 h-full bg-[#333333] border-r border-[#252526] flex flex-col justify-between items-center py-2 select-none shrink-0 z-10">
       {/* Top Icons */}
@@ -87,11 +92,31 @@ export function ActivityBar({
 
       {/* Bottom Icons */}
       <div className="flex flex-col items-center gap-1 w-full">
+        {isInstallable && (
+          <button
+            type="button"
+            onClick={promptInstall}
+            className="w-12 h-11 flex items-center justify-center text-[#38bdf8] hover:text-white hover:bg-[#38bdf8]/15 transition-colors border-l-2 border-transparent animate-pulse"
+            title="Install Code App (Desktop PWA)"
+          >
+            <Download className="w-5 h-5" />
+          </button>
+        )}
+        {onOpenShortcuts && (
+          <button
+            type="button"
+            onClick={onOpenShortcuts}
+            className="w-12 h-11 flex items-center justify-center text-[#858585] hover:text-white transition-colors border-l-2 border-transparent"
+            title="Keyboard Shortcuts (Ctrl+K Ctrl+S)"
+          >
+            <Keyboard className="w-5 h-5" />
+          </button>
+        )}
         <button
           type="button"
           onClick={onOpenSettings}
           className="w-12 h-11 flex items-center justify-center text-[#858585] hover:text-white transition-colors border-l-2 border-transparent"
-          title="Editor Settings"
+          title="Editor Settings (Ctrl+,)"
         >
           <Settings className="w-5 h-5" />
         </button>

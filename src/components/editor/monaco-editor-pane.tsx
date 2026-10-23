@@ -15,6 +15,12 @@ interface MonacoEditorPaneProps {
   onRun?: () => void;
   onCursorChange?: (line: number, col: number) => void;
   onMountEditor?: (editor: editor.IStandaloneCodeEditor) => void;
+  onToggleSidebar?: () => void;
+  onToggleBottomPanel?: () => void;
+  onQuickOpen?: () => void;
+  onOpenSettings?: () => void;
+  onCloseActiveTab?: () => void;
+  onOpenShortcuts?: () => void;
 }
 
 export function MonacoEditorPane({
@@ -25,6 +31,12 @@ export function MonacoEditorPane({
   onRun,
   onCursorChange,
   onMountEditor,
+  onToggleSidebar,
+  onToggleBottomPanel,
+  onQuickOpen,
+  onOpenSettings,
+  onCloseActiveTab,
+  onOpenShortcuts,
 }: MonacoEditorPaneProps) {
   const localEditorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 
@@ -36,19 +48,108 @@ export function MonacoEditorPane({
     localEditorRef.current = editorInstance;
     onMountEditor?.(editorInstance);
 
-    // Keybindings: Ctrl+S / Cmd+S
+    // Keybindings: Ctrl+S / Cmd+S (Save)
     editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       onSave?.();
     });
 
-    // Keybindings: Ctrl+Enter / Cmd+Enter to run
+    // Keybindings: Ctrl+Enter / Cmd+Enter (Run code)
     editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       onRun?.();
     });
 
+    // Keybindings: Ctrl+B / Cmd+B (Toggle Sidebar)
+    editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB, () => {
+      onToggleSidebar?.();
+    });
+
+    // Keybindings: Ctrl+P / Cmd+P (Quick Open / File Explorer)
+    editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyP, () => {
+      onQuickOpen?.();
+    });
+
+    // Keybindings: Ctrl+J / Cmd+J (Toggle Bottom Dock Panel)
+    editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyJ, () => {
+      onToggleBottomPanel?.();
+    });
+
+    // Keybindings: Ctrl+` / Cmd+` (Toggle Bottom Dock Panel)
+    editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Backquote, () => {
+      onToggleBottomPanel?.();
+    });
+
+    // Keybindings: Ctrl+, / Cmd+, (Open Settings)
+    editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Comma, () => {
+      onOpenSettings?.();
+    });
+
+    // Keybindings: Alt+W (Close Active Tab safely)
+    editorInstance.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.KeyW, () => {
+      onCloseActiveTab?.();
+    });
+
+    // Keybindings: Ctrl+K Ctrl+S (Open Keyboard Shortcuts)
+    editorInstance.addCommand(
+      monaco.KeyMod.chord(
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS
+      ),
+      () => {
+        onOpenShortcuts?.();
+      }
+    );
+
+    // Keybindings: Ctrl+Shift+P / Cmd+Shift+P (VS Code Command Palette)
+    editorInstance.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyP,
+      () => {
+        editorInstance.trigger('keyboard', 'editor.action.quickCommand', null);
+      }
+    );
+
+    // Keybindings: Shift+Alt+F (Format Document)
+    editorInstance.addCommand(
+      monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF,
+      () => {
+        editorInstance.trigger('keyboard', 'editor.action.formatDocument', null);
+      }
+    );
+
     // Cursor position tracker
     editorInstance.onDidChangeCursorPosition((e) => {
       onCursorChange?.(e.position.lineNumber, e.position.column);
+    });
+
+    // Fast Emmet expansion for ! or html:5 on Enter
+    editorInstance.onKeyDown((e) => {
+      if (e.keyCode === monaco.KeyCode.Enter && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+        const model = editorInstance.getModel();
+        const pos = editorInstance.getPosition();
+        if (model && pos && model.getLanguageId() === 'html') {
+          const line = model.getLineContent(pos.lineNumber).trim();
+          if (line === '!' || line === 'html:5') {
+            setTimeout(() => {
+              const currentModel = editorInstance.getModel();
+              if (currentModel) {
+                const currentContent = currentModel.getValue();
+                if (currentContent.includes('<!DOCTYPE html>')) return;
+
+                const lineContentNow = currentModel.getLineContent(pos.lineNumber);
+                if (lineContentNow.trim() === '!' || lineContentNow.trim() === 'html:5') {
+                  const range = new monaco.Range(pos.lineNumber, 1, pos.lineNumber, lineContentNow.length + 1);
+                  editorInstance.executeEdits('emmet-quick', [
+                    {
+                      range,
+                      text: `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Document</title>\n</head>\n<body>\n  \n</body>\n</html>\n`,
+                    },
+                  ]);
+                  editorInstance.setPosition({ lineNumber: pos.lineNumber + 8, column: 3 });
+                }
+              }
+            }, 60);
+          }
+        }
+      }
     });
 
     // Mobile / touch layout listener
@@ -126,8 +227,10 @@ export function MonacoEditorPane({
           cursorSmoothCaretAnimation: 'on',
           bracketPairColorization: { enabled: true },
           guides: { bracketPairs: true, indentation: true },
-          formatOnPaste: true,
-          formatOnType: true,
+          acceptSuggestionOnEnter: 'on',
+          tabCompletion: 'on',
+          snippetSuggestions: 'top',
+          suggestSelection: 'first',
           suggest: {
             preview: true,
             showIcons: true,

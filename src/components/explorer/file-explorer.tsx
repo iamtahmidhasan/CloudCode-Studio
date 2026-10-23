@@ -29,6 +29,7 @@ import {
 import {
   buildFileTree,
   getFileIcon,
+  getFolderIcon,
   isDescendantOf,
   getFolderDescendantCounts,
   getWorkspaceDescendantIds,
@@ -186,11 +187,7 @@ function TreeNodeItem({
             </button>
 
             {/* Folder Icon */}
-            {node.isExpanded ? (
-              <FolderOpen className="w-4 h-4 text-[#dcb67a] shrink-0" />
-            ) : (
-              <Folder className="w-4 h-4 text-[#dcb67a] shrink-0" />
-            )}
+            {getFolderIcon(node.name, node.isExpanded)}
 
             {/* Folder Name / Rename Input */}
             {isRenaming ? (
@@ -263,9 +260,9 @@ function TreeNodeItem({
               >
                 <div className="flex items-center gap-1.5">
                   {inlineCreation.type === 'folder' ? (
-                    <Folder className="w-3.5 h-3.5 text-[#dcb67a] shrink-0" />
+                    getFolderIcon(inlineName || 'folder', false, 'w-3.5 h-3.5 shrink-0')
                   ) : (
-                    <FileText className="w-3.5 h-3.5 text-[#007acc] shrink-0" />
+                    getFileIcon(inlineName || 'file', undefined, 'w-3.5 h-3.5 shrink-0')
                   )}
                   <input
                     type="text"

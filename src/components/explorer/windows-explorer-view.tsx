@@ -24,12 +24,8 @@ import {
   ExternalLink,
   Monitor,
   ArrowUpDown,
-  Code2,
   Info,
   FileText,
-  FileCode,
-  Globe,
-  FileJson,
   Home,
   Clock,
   FolderTree,
@@ -39,6 +35,7 @@ import {
 import {
   buildFileTree,
   getFileIcon,
+  getFolderIcon,
   isDescendantOf,
   getFolderDescendantCounts,
   type TreeNode,
@@ -218,11 +215,7 @@ function NestedTreeNodeRow({
                 <ChevronRight className="w-3.5 h-3.5" />
               )}
             </button>
-            {node.isExpanded ? (
-              <FolderOpen className="w-4 h-4 text-[#dcb67a] shrink-0" />
-            ) : (
-              <Folder className="w-4 h-4 text-[#dcb67a] shrink-0" />
-            )}
+            {getFolderIcon(node.name, node.isExpanded)}
             <span className="truncate font-semibold">{node.name}</span>
             <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#252526] text-[#858585] font-mono shrink-0 ml-1">
               {counts.fileCount} {counts.fileCount === 1 ? 'file' : 'files'}
@@ -1874,7 +1867,7 @@ export function WindowsExplorerView({
                           }`}
                         >
                           <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center mb-1.5 drop-shadow">
-                            {getFileIcon(file.name, file.language)}
+                            {getFileIcon(file.name, file.language, 'w-8 h-8 sm:w-10 sm:h-10')}
                           </div>
                           <span className="text-xs font-medium text-center truncate max-w-full text-white">
                             {file.name}
@@ -1941,7 +1934,7 @@ export function WindowsExplorerView({
                         : 'bg-[#252526]/60 hover:bg-[#2a2d2e] border-transparent hover:border-[#3c3c3c]'
                     }`}
                   >
-                    <Folder className="w-12 h-12 text-[#dcb67a] mb-2 drop-shadow" />
+                    {getFolderIcon(folder.name, false, 'w-12 h-12 mb-2 drop-shadow')}
                     <span className="text-xs font-medium text-center truncate max-w-full text-white">
                       {folder.name}
                     </span>
@@ -1976,21 +1969,7 @@ export function WindowsExplorerView({
                     }`}
                   >
                     <div className="w-12 h-12 flex items-center justify-center mb-2 drop-shadow">
-                      {file.name.endsWith('.html') ? (
-                        <Globe className="w-10 h-10 text-[#e34c26]" />
-                      ) : file.name.endsWith('.css') ? (
-                        <Code2 className="w-10 h-10 text-[#264de4]" />
-                      ) : file.name.endsWith('.ts') || file.name.endsWith('.tsx') ? (
-                        <FileCode className="w-10 h-10 text-[#3178c6]" />
-                      ) : file.name.endsWith('.js') || file.name.endsWith('.jsx') ? (
-                        <FileCode className="w-10 h-10 text-[#f7df1e]" />
-                      ) : file.name.endsWith('.py') ? (
-                        <Code2 className="w-10 h-10 text-[#3776ab]" />
-                      ) : file.name.endsWith('.json') ? (
-                        <FileJson className="w-10 h-10 text-[#f59e0b]" />
-                      ) : (
-                        <FileText className="w-10 h-10 text-[#858585]" />
-                      )}
+                      {getFileIcon(file.name, file.language, 'w-10 h-10')}
                     </div>
                     <span className="text-xs font-medium text-center truncate max-w-full text-white">
                       {file.name}

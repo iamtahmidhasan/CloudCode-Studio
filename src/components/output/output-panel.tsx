@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import type { ConsoleMessage } from '@/types';
-import { Trash2, Terminal, AlertTriangle, AlertCircle, Info, Search, CheckCircle2, CornerDownLeft } from 'lucide-react';
+import { Trash2, Terminal, AlertTriangle, AlertCircle, Info, Search, CheckCircle2, CornerDownLeft, X } from 'lucide-react';
 
 interface OutputPanelProps {
   messages: ConsoleMessage[];
@@ -67,63 +67,89 @@ export function OutputPanel({
   return (
     <div className={`flex flex-col h-full w-full bg-[#1e1e1e] text-xs font-mono select-none overflow-hidden ${hasBorderTop ? 'border-t border-[#3c3c3c]' : ''}`}>
       {/* Console Header Bar */}
-      <div className="flex items-center justify-between px-3 h-8 bg-[#252526] border-b border-[#3c3c3c] text-[#858585] shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 font-medium text-[#cccccc]">
-            <Terminal className="w-3.5 h-3.5 text-[#007acc]" />
-            <span>Console Output</span>
+      <div className="flex flex-wrap items-center justify-between px-2.5 sm:px-3 py-1 sm:py-0 min-h-[32px] bg-[#252526] border-b border-[#3c3c3c] text-[#858585] gap-x-2 gap-y-1.5 shrink-0">
+        {/* Left Side: Title & Counter */}
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 font-medium text-[#cccccc] shrink-0">
+            <Terminal className="w-3.5 h-3.5 text-[#007acc] shrink-0" />
+            <span className="hidden xs:inline text-xs">Console Output</span>
+            <span className="xs:hidden text-xs">Console</span>
           </div>
-          <span className="px-1.5 py-0.2 bg-[#1e1e1e] rounded text-[10px] text-[#858585]">
+          <span className="px-1.5 py-0.2 bg-[#1e1e1e] rounded text-[10px] text-[#858585] shrink-0 font-mono">
             {messages.length}
           </span>
           {executionTime !== null && executionTime !== undefined && (
-            <span className="text-[11px] text-emerald-400 font-sans">({executionTime}ms)</span>
+            <span className="text-[10px] sm:text-[11px] text-emerald-400 font-sans shrink-0">
+              ({executionTime}ms)
+            </span>
           )}
         </div>
 
         {/* Filter & Search Controls */}
-        <div className="flex items-center gap-2">
-          {/* Search */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap justify-end min-w-0 ml-auto sm:ml-0">
+          {/* Search with Clear Button */}
           <div className="relative flex items-center">
-            <Search className="w-3 h-3 absolute left-1.5 text-[#6e6e6e]" />
+            <Search className="w-3 h-3 absolute left-1.5 text-[#6e6e6e] pointer-events-none" />
             <input
               type="text"
-              placeholder="Filter output..."
+              placeholder="Filter..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-6 pr-2 py-0.5 bg-[#1e1e1e] border border-[#3c3c3c] rounded text-[11px] text-[#cccccc] focus:outline-none focus:border-[#007acc] w-28 sm:w-36"
+              className="pl-5 pr-5 py-0.5 bg-[#1e1e1e] border border-[#3c3c3c] focus:border-[#007acc] rounded text-[11px] text-[#cccccc] focus:outline-none w-20 xs:w-28 sm:w-36 transition-all duration-150"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-1 text-[#858585] hover:text-white p-0.5 rounded"
+                title="Clear search"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            )}
           </div>
 
           {/* Level Filter Tabs */}
-          <div className="flex items-center bg-[#1e1e1e] rounded border border-[#3c3c3c] p-0.5 text-[11px]">
+          <div className="flex items-center bg-[#1e1e1e] rounded border border-[#3c3c3c] p-0.5 text-[10px] sm:text-[11px] shrink-0">
             <button
               type="button"
               onClick={() => setFilterLevel('all')}
-              className={`px-1.5 py-0.5 rounded ${filterLevel === 'all' ? 'bg-[#04395e] text-white' : 'text-[#858585] hover:text-white'}`}
+              className={`px-1.5 py-0.5 rounded transition-colors ${
+                filterLevel === 'all' ? 'bg-[#04395e] text-white font-medium shadow-xs' : 'text-[#858585] hover:text-white'
+              }`}
             >
               All
             </button>
             <button
               type="button"
               onClick={() => setFilterLevel('log')}
-              className={`px-1.5 py-0.5 rounded ${filterLevel === 'log' ? 'bg-[#04395e] text-white' : 'text-[#858585] hover:text-white'}`}
+              className={`px-1.5 py-0.5 rounded transition-colors ${
+                filterLevel === 'log' ? 'bg-[#04395e] text-white font-medium shadow-xs' : 'text-[#858585] hover:text-white'
+              }`}
             >
               Logs
             </button>
             <button
               type="button"
               onClick={() => setFilterLevel('warn')}
-              className={`px-1.5 py-0.5 rounded ${filterLevel === 'warn' ? 'bg-[#04395e] text-white' : 'text-[#858585] hover:text-white'}`}
+              className={`px-1.5 py-0.5 rounded transition-colors ${
+                filterLevel === 'warn' ? 'bg-[#04395e] text-white font-medium shadow-xs' : 'text-[#858585] hover:text-white'
+              }`}
+              title="Warnings"
             >
-              Warnings
+              <span className="hidden sm:inline">Warnings</span>
+              <span className="sm:hidden">Warn</span>
             </button>
             <button
               type="button"
               onClick={() => setFilterLevel('error')}
-              className={`px-1.5 py-0.5 rounded ${filterLevel === 'error' ? 'bg-[#04395e] text-white' : 'text-[#858585] hover:text-white'}`}
+              className={`px-1.5 py-0.5 rounded transition-colors ${
+                filterLevel === 'error' ? 'bg-[#04395e] text-white font-medium shadow-xs' : 'text-[#858585] hover:text-white'
+              }`}
+              title="Errors"
             >
-              Errors
+              <span className="hidden sm:inline">Errors</span>
+              <span className="sm:hidden">Err</span>
             </button>
           </div>
 
@@ -131,7 +157,7 @@ export function OutputPanel({
           <button
             type="button"
             onClick={onClear}
-            className="p-1 rounded hover:bg-[#3c3c3c] text-[#858585] hover:text-white transition-colors"
+            className="p-1 rounded hover:bg-[#3c3c3c] text-[#858585] hover:text-white transition-colors shrink-0"
             title="Clear Console"
           >
             <Trash2 className="w-3.5 h-3.5" />

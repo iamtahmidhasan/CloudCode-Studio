@@ -1,14 +1,8 @@
 import React from 'react';
 import type { FolderItem, FileItem } from '@/types';
-import {
-  FileCode,
-  FileText,
-  FileJson,
-  Image as ImageIcon,
-  Globe,
-  Code2,
-  Package,
-} from 'lucide-react';
+import { FileIcon, FolderIcon } from '@/components/ui/file-icon';
+
+export { FileIcon, FolderIcon };
 
 export interface TreeFileNode {
   type: 'file';
@@ -33,57 +27,12 @@ export interface TreeFolderNode {
 
 export type TreeNode = TreeFileNode | TreeFolderNode;
 
-export function getFileIcon(filename: string, language?: string) {
-  const ext = filename.split('.').pop()?.toLowerCase() || language;
-  const lowerName = filename.toLowerCase();
+export function getFileIcon(filename: string, language?: string, className = 'w-3.5 h-3.5 shrink-0') {
+  return <FileIcon filename={filename} language={language} className={className} />;
+}
 
-  if (lowerName === 'package.json') {
-    return <Package className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
-  }
-
-  switch (ext) {
-    case 'html':
-    case 'htm':
-      return <Globe className="w-3.5 h-3.5 text-[#e34c26] shrink-0" />;
-    case 'css':
-    case 'scss':
-    case 'less':
-      return <Code2 className="w-3.5 h-3.5 text-[#264de4] shrink-0" />;
-    case 'js':
-    case 'mjs':
-    case 'cjs':
-      return <FileCode className="w-3.5 h-3.5 text-[#f7df1e] shrink-0" />;
-    case 'jsx':
-      return <FileCode className="w-3.5 h-3.5 text-[#61dafb] shrink-0" />;
-    case 'ts':
-      return <FileCode className="w-3.5 h-3.5 text-[#3178c6] shrink-0" />;
-    case 'tsx':
-      return <FileCode className="w-3.5 h-3.5 text-[#00b4d8] shrink-0" />;
-    case 'py':
-      return <Code2 className="w-3.5 h-3.5 text-[#3776ab] shrink-0" />;
-    case 'cpp':
-    case 'cxx':
-    case 'cc':
-    case 'c':
-    case 'h':
-    case 'hpp':
-      return <Code2 className="w-3.5 h-3.5 text-[#659ad2] shrink-0" />;
-    case 'json':
-      return <FileJson className="w-3.5 h-3.5 text-[#f59e0b] shrink-0" />;
-    case 'md':
-    case 'markdown':
-      return <FileText className="w-3.5 h-3.5 text-[#38bdf8] shrink-0" />;
-    case 'png':
-    case 'jpg':
-    case 'jpeg':
-    case 'gif':
-    case 'svg':
-    case 'ico':
-    case 'webp':
-      return <ImageIcon className="w-3.5 h-3.5 text-[#c084fc] shrink-0" />;
-    default:
-      return <FileText className="w-3.5 h-3.5 text-[#858585] shrink-0" />;
-  }
+export function getFolderIcon(folderName: string, isExpanded = false, className = 'w-4 h-4 shrink-0') {
+  return <FolderIcon folderName={folderName} isExpanded={isExpanded} className={className} />;
 }
 
 /**
