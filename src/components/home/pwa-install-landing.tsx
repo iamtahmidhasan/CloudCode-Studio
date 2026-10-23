@@ -64,7 +64,7 @@ export function PwaInstallLanding() {
       />
 
       {/* Top minimal status bar */}
-      <header className="absolute top-0 left-0 right-0 z-20 px-6 py-6 flex items-center justify-between pointer-events-none">
+      <header className="absolute top-0 left-0 right-0 z-20 pt-[max(1.25rem,env(safe-area-inset-top,1.25rem))] px-6 pb-3 flex items-center justify-between pointer-events-none">
         <div className="flex items-center gap-2 pointer-events-auto">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-[10px] font-mono tracking-widest uppercase text-neutral-500">
@@ -142,7 +142,7 @@ export function PwaInstallLanding() {
       </div>
 
       {/* Minimal Footer */}
-      <footer className="absolute bottom-0 left-0 right-0 z-20 px-6 py-6 flex items-center justify-between text-[10px] font-mono text-neutral-600 pointer-events-none">
+      <footer className="absolute bottom-0 left-0 right-0 z-20 pb-[max(1.25rem,env(safe-area-inset-bottom,1.25rem))] px-6 pt-3 flex items-center justify-between text-[10px] font-mono text-neutral-600 pointer-events-none">
         <span>INTERACTIVE ASCII CANVAS</span>
         <span>CODE V1.0</span>
       </footer>
@@ -151,11 +151,11 @@ export function PwaInstallLanding() {
       {showHelp && (
         <div 
           onClick={() => setShowHelp(false)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200 pointer-events-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center pt-[max(1.5rem,env(safe-area-inset-top,1.5rem))] pb-[max(1.5rem,env(safe-area-inset-bottom,1.5rem))] px-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 pointer-events-auto overflow-y-auto"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-[340px] bg-[#0c0c0c]/90 border border-white/10 rounded-2xl p-5 shadow-[0_0_50px_rgba(0,0,0,0.9)] backdrop-blur-2xl text-left overflow-hidden animate-in zoom-in-95 duration-200"
+            className="relative w-full max-w-[340px] max-h-[calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-3rem)] overflow-y-auto bg-[#0c0c0c]/95 border border-white/10 rounded-2xl p-5 shadow-[0_0_50px_rgba(0,0,0,0.9)] backdrop-blur-2xl text-left my-auto animate-in zoom-in-95 duration-200"
           >
             {/* Ambient top hairline glow */}
             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#007acc]/70 to-transparent pointer-events-none" />

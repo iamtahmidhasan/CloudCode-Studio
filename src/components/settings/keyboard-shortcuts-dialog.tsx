@@ -230,7 +230,7 @@ export function KeyboardShortcutsDialog({ isOpen, onClose }: KeyboardShortcutsDi
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-[#252526] text-[#cccccc] border-[#3c3c3c] sm:max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden shadow-2xl">
+      <DialogContent className="bg-[#252526] text-[#cccccc] border-[#3c3c3c] sm:max-w-2xl max-h-[calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2.5rem)] flex flex-col p-0 overflow-hidden shadow-2xl">
         <DialogHeader className="p-4 sm:p-5 pb-3 border-b border-[#333333] shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded bg-[#007acc]/15 flex items-center justify-center text-[#007acc]">

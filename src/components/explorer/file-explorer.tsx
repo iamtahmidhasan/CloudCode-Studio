@@ -1321,8 +1321,8 @@ export function FileExplorer({
 
       {/* Move To Modal Dialog (accessible on mobile & desktop) */}
       {moveToItem && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#1e1e1e] border border-[#3c3c3c] rounded-lg shadow-2xl w-full max-w-sm flex flex-col overflow-hidden text-xs text-white">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center pt-[max(1rem,env(safe-area-inset-top,1rem))] pb-[max(1rem,env(safe-area-inset-bottom,1rem))] px-4 overflow-y-auto">
+          <div className="bg-[#1e1e1e] border border-[#3c3c3c] rounded-lg shadow-2xl w-full max-w-sm flex flex-col overflow-hidden text-xs text-white my-auto max-h-[calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2rem)]">
             <div className="p-3 border-b border-[#3c3c3c] flex items-center justify-between font-semibold">
               <div className="flex items-center gap-2">
                 <FolderInput className="w-4 h-4 text-[#007acc]" />

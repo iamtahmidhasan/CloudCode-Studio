@@ -1119,7 +1119,7 @@ export function WindowsExplorerView({
       )}
 
       {/* WINDOW TITLE BAR (Windows 11 Fluent style) */}
-      <div className="flex items-center justify-between h-10 px-3 bg-[#181818] border-b border-[#2d2d2d] shrink-0">
+      <div className="flex items-center justify-between px-3 pt-[env(safe-area-inset-top,0px)] h-[calc(2.5rem+env(safe-area-inset-top,0px))] bg-[#181818] border-b border-[#2d2d2d] shrink-0">
         {/* Window Tabs / Title */}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 px-3 py-1 bg-[#252526] border-t-2 border-[#007acc] rounded-t text-xs font-medium text-white shadow-sm">

@@ -393,7 +393,7 @@ export function WorkbenchRoot() {
     >
       {/* Mobile Top Header (Mobile only) */}
       {isMobile && (
-        <header className="h-11 bg-[#252526] border-b border-[#3c3c3c] flex items-center justify-between px-3 select-none shrink-0 z-20">
+        <header className="bg-[#252526] border-b border-[#3c3c3c] flex items-center justify-between px-3 pt-[env(safe-area-inset-top,0px)] h-[calc(2.75rem+env(safe-area-inset-top,0px))] select-none shrink-0 z-20">
           <div className="flex items-center gap-1.5 overflow-hidden">
             <Folder className="w-4 h-4 text-[#007acc] shrink-0" />
             <span className="font-bold text-xs text-white truncate max-w-[160px]">

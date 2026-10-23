@@ -48,7 +48,7 @@ export function SettingsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-[#252526] text-[#cccccc] border-[#3c3c3c] sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-[#252526] text-[#cccccc] border-[#3c3c3c] sm:max-w-md max-h-[calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2.5rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-white text-base font-semibold flex items-center gap-2">
             <span>Editor Settings</span>
