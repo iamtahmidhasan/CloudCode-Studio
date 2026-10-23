@@ -65,7 +65,7 @@ export function useWorkspace() {
     [folders, activeWorkspaceRootId]
   );
   const activeWorkspaceName =
-    activeWorkspaceFolder?.name || workspace.activeWorkspaceName || activeProject?.name || 'Workspace';
+    activeWorkspaceFolder?.name || workspace.activeWorkspaceName || (activeWorkspaceRootId ? 'Workspace' : 'Home');
 
   // Auto-recovery: if activeWorkspaceRootId is set but folder is not found in folders, reset to project root
   useEffect(() => {

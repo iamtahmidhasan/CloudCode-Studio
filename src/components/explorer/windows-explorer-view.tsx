@@ -18,7 +18,7 @@ import {
   Folder,
   FolderOpen,
   LayoutGrid,
-  List,
+  PanelLeft,
   ChevronRight,
   ChevronDown,
   ExternalLink,
@@ -26,7 +26,6 @@ import {
   ArrowUpDown,
   Code2,
   Info,
-  HardDrive,
   FileText,
   FileCode,
   Globe,
@@ -72,7 +71,7 @@ interface WindowsExplorerViewProps {
   onToggleFolderExpanded: (folderId: string) => void;
 }
 
-type ViewMode = 'nested' | 'grid' | 'details';
+type ViewMode = 'nested' | 'grid';
 type SortField = 'name' | 'type' | 'size' | 'updatedAt';
 type SortDirection = 'asc' | 'desc';
 
@@ -365,7 +364,6 @@ function NestedTreeNodeRow({
 }
 
 export function WindowsExplorerView({
-  project,
   files,
   folders,
   activeFileId,
@@ -419,6 +417,8 @@ export function WindowsExplorerView({
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [searchQuery, setSearchQuery] = useState('');
   const [showPreviewPane, setShowPreviewPane] = useState(true);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
+  const [showMobileNav, setShowMobileNav] = useState(false);
 
   // Canvas Collapsed Folders State for Nested View (empty = all expanded)
   const [canvasCollapsedFolderIds, setCanvasCollapsedFolderIds] = useState<string[]>([]);
@@ -478,7 +478,11 @@ export function WindowsExplorerView({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (contextMenu) {
+        if (showMobileNav) {
+          setShowMobileNav(false);
+        } else if (showMobilePreview) {
+          setShowMobilePreview(false);
+        } else if (contextMenu) {
           setContextMenu(null);
         } else if (isCreatingNew) {
           setIsCreatingNew(null);
@@ -501,7 +505,7 @@ export function WindowsExplorerView({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('mousedown', handleClick);
     };
-  }, [contextMenu, isCreatingNew, renamingItem, onClose]);
+  }, [contextMenu, isCreatingNew, renamingItem, onClose, showMobileNav, showMobilePreview]);
 
   // Navigate to folder and update history
   const navigateToFolder = (folderId: string | null) => {
@@ -850,14 +854,17 @@ export function WindowsExplorerView({
     return buildFileTree(folders, [], expandedFolderIds);
   }, [folders, expandedFolderIds]);
 
-  const renderLeftTreeNode = (node: TreeNode) => {
+  const renderLeftTreeNode = (node: TreeNode, closeMobile = false) => {
     if (node.type !== 'folder') return null;
     const isCurrent = node.id === currentFolderId;
 
     return (
       <div key={node.id} className="flex flex-col select-none">
         <div
-          onClick={() => navigateToFolder(node.id)}
+          onClick={() => {
+            navigateToFolder(node.id);
+            if (closeMobile) setShowMobileNav(false);
+          }}
           onDragOver={(e) => handleDragOver(e, node.id)}
           onDrop={(e) => handleDrop(e, node.id)}
           style={{ paddingLeft: `${node.depth * 14 + 10}px` }}
@@ -889,9 +896,222 @@ export function WindowsExplorerView({
 
         {node.isExpanded && (
           <div className="flex flex-col">
-            {node.children.map((child) => renderLeftTreeNode(child))}
+            {node.children.map((child) => renderLeftTreeNode(child, closeMobile))}
           </div>
         )}
+      </div>
+    );
+  };
+
+  const renderNavigationItems = (closeMobile = false) => {
+    const handleNav = (folderId: string | null) => {
+      navigateToFolder(folderId);
+      if (closeMobile) setShowMobileNav(false);
+    };
+
+    return (
+      <div className="flex flex-col gap-1">
+        <div className="text-[10px] text-[#858585] uppercase font-bold tracking-wider mb-1 px-2">
+          Quick Access
+        </div>
+
+        {/* Home Directory entry */}
+        <div
+          onClick={() => handleNav(HOME_FOLDER_ID)}
+          className={`flex items-center justify-between px-2.5 py-1.5 rounded cursor-pointer text-xs mb-1 transition-colors ${
+            isHome
+              ? 'bg-[#007acc] text-white font-medium shadow-sm'
+              : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white'
+          }`}
+        >
+          <div className="flex items-center gap-2 truncate">
+            <Home className={`w-4 h-4 shrink-0 ${isHome ? 'text-white' : 'text-sky-400'}`} />
+            <span className="truncate">Home (All Folders)</span>
+          </div>
+          <span
+            className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+              isHome ? 'bg-white/20 text-white' : 'bg-[#252526] text-[#858585]'
+            }`}
+          >
+            {folders.length}
+          </span>
+        </div>
+
+        {/* Quick Access Top-Level Folders */}
+        {projectsFolder && (
+          <div
+            onClick={() => handleNav(projectsFolder.id)}
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer text-xs mb-1 transition-colors ${
+              currentFolderId === projectsFolder.id
+                ? 'bg-[#007acc] text-white font-medium shadow-sm'
+                : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white'
+            }`}
+          >
+            <Folder className={`w-4 h-4 shrink-0 ${currentFolderId === projectsFolder.id ? 'text-white' : 'text-[#dcb67a]'}`} />
+            <span className="truncate">Projects</span>
+          </div>
+        )}
+
+        {templatesFolder && (
+          <div
+            onClick={() => handleNav(templatesFolder.id)}
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer text-xs mb-1 transition-colors ${
+              currentFolderId === templatesFolder.id
+                ? 'bg-[#007acc] text-white font-medium shadow-sm'
+                : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white'
+            }`}
+          >
+            <Folder className={`w-4 h-4 shrink-0 ${currentFolderId === templatesFolder.id ? 'text-white' : 'text-[#dcb67a]'}`} />
+            <span className="truncate">Templates</span>
+          </div>
+        )}
+
+        {/* Active Workspace Pin if set */}
+        {activeWorkspaceRootId && activeWorkspaceFolder && (
+          <div
+            onClick={() => handleNav(activeWorkspaceRootId)}
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer text-xs mb-1 transition-colors ${
+              currentFolderId === activeWorkspaceRootId
+                ? 'bg-[#007acc] text-white font-medium shadow-sm'
+                : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white'
+            }`}
+            title="Currently Open Workspace Folder in Code Editor"
+          >
+            <FolderOpen className={`w-4 h-4 shrink-0 ${currentFolderId === activeWorkspaceRootId ? 'text-white' : 'text-sky-400'}`} />
+            <span className="truncate font-medium">{activeWorkspaceFolder.name} (Active)</span>
+          </div>
+        )}
+
+        <div className="text-[10px] text-[#858585] uppercase font-bold tracking-wider mt-2 mb-1 px-2">
+          Folders
+        </div>
+
+        {/* Recursive Left Folder Tree */}
+        <div className="flex flex-col gap-0.5">
+          {leftTreeNodes.map((node) => renderLeftTreeNode(node, closeMobile))}
+        </div>
+      </div>
+    );
+  };
+
+  // Preview / Details pane content renderer
+  const renderPreviewContent = (onCloseDetails?: () => void) => {
+    if (!selectedFile && !selectedFolder) return null;
+
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between pb-2 border-b border-[#2d2d2d] mb-3 shrink-0">
+          <span className="font-semibold text-white">Item Details</span>
+          {onCloseDetails && (
+            <button
+              type="button"
+              onClick={onCloseDetails}
+              className="text-[#858585] hover:text-white p-1 rounded hover:bg-[#333333]"
+              title="Close details"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {selectedFile ? (
+          <div className="flex flex-col gap-3 flex-1 overflow-y-auto">
+            {/* Big Icon & Name */}
+            <div className="flex flex-col items-center p-3 bg-[#252526] rounded border border-[#2d2d2d] shrink-0">
+              <div className="mb-2">
+                {getFileIcon(selectedFile.name, selectedFile.language)}
+              </div>
+              <span className="font-medium text-center text-white break-all">
+                {selectedFile.name}
+              </span>
+              <span className="text-[10px] text-[#858585] mt-0.5">
+                {getFileDescription(selectedFile.name, selectedFile.language)}
+              </span>
+            </div>
+
+            {/* Properties */}
+            <div className="flex flex-col gap-1.5 text-[11px] shrink-0">
+              <div className="flex justify-between py-1 border-b border-[#2d2d2d]">
+                <span className="text-[#858585]">Size:</span>
+                <span className="text-white font-mono">{formatBytes(selectedFile.content?.length || 0)}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#2d2d2d]">
+                <span className="text-[#858585]">Path:</span>
+                <span className="text-white font-mono truncate max-w-[150px]">{selectedFile.path}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#2d2d2d]">
+                <span className="text-[#858585]">Modified:</span>
+                <span className="text-white">{formatDate(selectedFile.updatedAt)}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#2d2d2d]">
+                <span className="text-[#858585]">Lines:</span>
+                <span className="text-white font-mono">{(selectedFile.content || '').split('\n').length}</span>
+              </div>
+            </div>
+
+            {/* Open in Editor CTA */}
+            <button
+              type="button"
+              onClick={() => {
+                onOpenFileInEditor(selectedFile.id);
+                if (onCloseDetails) onCloseDetails();
+              }}
+              className="w-full py-1.5 bg-[#007acc] hover:bg-[#1177bb] text-white rounded font-medium flex items-center justify-center gap-2 transition-colors shrink-0"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Open in Monaco Editor</span>
+            </button>
+
+            {/* Code Snippet Preview */}
+            <div className="flex flex-col gap-1 mt-1 shrink-0">
+              <span className="text-[10px] text-[#858585] uppercase font-bold tracking-wider">Preview</span>
+              <div className="p-2 bg-[#141414] border border-[#2d2d2d] rounded text-[10px] font-mono text-[#cccccc] max-h-48 overflow-hidden select-text whitespace-pre-wrap opacity-80">
+                {selectedFile.content?.slice(0, 400) || '// (Empty file)'}
+                {(selectedFile.content?.length || 0) > 400 && '\n...'}
+              </div>
+            </div>
+          </div>
+        ) : selectedFolder ? (
+          <div className="flex flex-col gap-3 flex-1 overflow-y-auto">
+            <div className="flex flex-col items-center p-3 bg-[#252526] rounded border border-[#2d2d2d] shrink-0">
+              <Folder className="w-12 h-12 text-[#dcb67a] mb-2" />
+              <span className="font-medium text-center text-white break-all">{selectedFolder.name}</span>
+              <span className="text-[10px] text-[#858585] mt-0.5">File folder</span>
+            </div>
+
+            <div className="flex flex-col gap-1.5 text-[11px] shrink-0">
+              <div className="flex justify-between py-1 border-b border-[#2d2d2d]">
+                <span className="text-[#858585]">Path:</span>
+                <span className="text-white font-mono truncate max-w-[150px]">{selectedFolder.path}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#2d2d2d]">
+                <span className="text-[#858585]">Modified:</span>
+                <span className="text-white">{formatDate(selectedFolder.updatedAt)}</span>
+              </div>
+              {(() => {
+                const counts = getFolderDescendantCounts(selectedFolder.id, folders, files);
+                return (
+                  <div className="flex justify-between py-1 border-b border-[#2d2d2d]">
+                    <span className="text-[#858585]">Contains:</span>
+                    <span className="text-white">{counts.fileCount} files, {counts.folderCount} folders</span>
+                  </div>
+                );
+              })()}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                navigateToFolder(selectedFolder.id);
+                if (onCloseDetails) onCloseDetails();
+              }}
+              className="w-full py-1.5 bg-[#007acc] hover:bg-[#1177bb] text-white rounded font-medium flex items-center justify-center gap-2 transition-colors shrink-0"
+            >
+              <FolderOpen className="w-3.5 h-3.5" />
+              <span>Open Folder</span>
+            </button>
+          </div>
+        ) : null}
       </div>
     );
   };
@@ -956,7 +1176,7 @@ export function WindowsExplorerView({
       {/* TOP COMMAND BAR / RIBBON */}
       <div className="flex flex-wrap items-center justify-between px-3 py-1.5 bg-[#252526] border-b border-[#2d2d2d] gap-2 shrink-0 text-xs">
         {/* Left Action Buttons */}
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1 min-w-0 flex-1">
           {/* New Item Buttons */}
           <button
             type="button"
@@ -965,11 +1185,12 @@ export function WindowsExplorerView({
               setNewItemName('');
               setCreateError(null);
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded hover:bg-[#333333] text-[#cccccc] hover:text-white transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[#333333] text-[#cccccc] hover:text-white transition-colors shrink-0"
             title="Create New File in current folder"
           >
-            <FilePlus className="w-3.5 h-3.5 text-[#007acc]" />
-            <span>New file</span>
+            <FilePlus className="w-3.5 h-3.5 text-[#007acc] shrink-0" />
+            <span className="hidden sm:inline">New file</span>
+            <span className="sm:hidden text-[11px]">File</span>
           </button>
           <button
             type="button"
@@ -978,14 +1199,15 @@ export function WindowsExplorerView({
               setNewItemName('');
               setCreateError(null);
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded hover:bg-[#333333] text-[#cccccc] hover:text-white transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[#333333] text-[#cccccc] hover:text-white transition-colors shrink-0"
             title="Create New Folder in current folder"
           >
-            <FolderPlus className="w-3.5 h-3.5 text-[#dcb67a]" />
-            <span>New folder</span>
+            <FolderPlus className="w-3.5 h-3.5 text-[#dcb67a] shrink-0" />
+            <span className="hidden sm:inline">New folder</span>
+            <span className="sm:hidden text-[11px]">Folder</span>
           </button>
 
-          <div className="w-px h-4 bg-[#3c3c3c] mx-1" />
+          <div className="w-px h-4 bg-[#3c3c3c] mx-0.5 hidden xs:block" />
 
           {/* Action on selected */}
           {selectedItem && (
@@ -994,10 +1216,12 @@ export function WindowsExplorerView({
                 <button
                   type="button"
                   onClick={() => onOpenFileInEditor(selectedItem.id)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 bg-[#007acc]/20 hover:bg-[#007acc] text-sky-300 hover:text-white rounded transition-colors font-medium"
+                  className="flex items-center gap-1.5 px-2 py-1 bg-[#007acc]/20 hover:bg-[#007acc] text-sky-300 hover:text-white rounded transition-colors font-medium shrink-0"
+                  title="Open in Code Editor"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Open in Editor</span>
+                  <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden sm:inline">Open in Editor</span>
+                  <span className="sm:hidden text-[11px]">Open</span>
                 </button>
               )}
               <button
@@ -1008,11 +1232,11 @@ export function WindowsExplorerView({
                   setRenameValue(targetName);
                   setRenameError(null);
                 }}
-                className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[#333333] text-[#cccccc] hover:text-white transition-colors"
+                className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[#333333] text-[#cccccc] hover:text-white transition-colors shrink-0"
                 title="Rename Selected"
               >
-                <Edit2 className="w-3.5 h-3.5" />
-                <span>Rename</span>
+                <Edit2 className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden xs:inline">Rename</span>
               </button>
               <button
                 type="button"
@@ -1025,11 +1249,11 @@ export function WindowsExplorerView({
                     if (f) setDeleteConfirmFolder(f);
                   }
                 }}
-                className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-red-950/60 hover:text-red-300 text-red-400 transition-colors"
+                className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-red-950/60 hover:text-red-300 text-red-400 transition-colors shrink-0"
                 title="Delete Selected"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete</span>
+                <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden xs:inline">Delete</span>
               </button>
               {selectedItem.type === 'folder' && onOpenFolderAsWorkspace && (
                 <button
@@ -1038,11 +1262,12 @@ export function WindowsExplorerView({
                     onOpenFolderAsWorkspace(selectedItem.id);
                     onClose();
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1 bg-[#007acc] hover:bg-[#1177bb] text-white rounded transition-colors font-medium shadow-sm"
+                  className="flex items-center gap-1.5 px-2.5 py-1 bg-[#007acc] hover:bg-[#1177bb] text-white rounded transition-colors font-medium shadow-sm shrink-0"
                   title="Open this folder in Code Editor without parent folders"
                 >
-                  <FolderOpen className="w-3.5 h-3.5" />
-                  <span>Open Folder in Code Editor</span>
+                  <FolderOpen className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden md:inline">Open Folder in Code Editor</span>
+                  <span className="md:hidden text-[11px]">Open Workspace</span>
                 </button>
               )}
             </>
@@ -1058,11 +1283,12 @@ export function WindowsExplorerView({
                     onOpenFolderAsWorkspace(currentFolderId);
                     showToast(`Set "${currentFolder?.name}" as Workspace Root`);
                   }}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#007acc]/20 hover:bg-[#007acc] text-sky-300 hover:text-white transition-colors"
+                  className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#007acc]/20 hover:bg-[#007acc] text-sky-300 hover:text-white transition-colors shrink-0"
                   title="Set current directory as Workspace Root"
                 >
-                  <FolderOpen className="w-3.5 h-3.5" />
+                  <FolderOpen className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden sm:inline">Set as Workspace Root</span>
+                  <span className="sm:hidden text-[11px]">Set Root</span>
                 </button>
               )}
               {activeWorkspaceRootId && (
@@ -1072,10 +1298,10 @@ export function WindowsExplorerView({
                     onOpenFolderAsWorkspace(null);
                     showToast('Cleared Workspace Root (Full Project Open)');
                   }}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#333333] hover:bg-[#3c3c3c] text-[#cccccc] hover:text-white transition-colors"
+                  className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#333333] hover:bg-[#3c3c3c] text-[#cccccc] hover:text-white transition-colors shrink-0"
                   title="Clear Workspace Root (Open Entire Project)"
                 >
-                  <Layers className="w-3.5 h-3.5 text-[#007acc]" />
+                  <Layers className="w-3.5 h-3.5 text-[#007acc] shrink-0" />
                   <span className="hidden sm:inline">Clear Root</span>
                 </button>
               )}
@@ -1085,8 +1311,7 @@ export function WindowsExplorerView({
 
         {/* Right View & Filter Toggles */}
         <div className="flex items-center gap-1">
-          {/* View Mode Toggle */}
-          {/* View Mode Toggle: Nested, Grid, Details */}
+          {/* View Mode Toggle: Nested, Grid */}
           <div className="flex items-center bg-[#1e1e1e] p-0.5 rounded border border-[#3c3c3c]">
             <button
               type="button"
@@ -1110,24 +1335,40 @@ export function WindowsExplorerView({
               <LayoutGrid className="w-3.5 h-3.5" />
               <span className="text-[11px] px-1 hidden md:inline">Grid</span>
             </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('details')}
-              className={`p-1 rounded flex items-center gap-1 transition-colors ${
-                viewMode === 'details' ? 'bg-[#007acc] text-white font-medium shadow-sm' : 'text-[#858585] hover:text-white'
-              }`}
-              title="Details Table View"
-            >
-              <List className="w-3.5 h-3.5" />
-              <span className="text-[11px] px-1 hidden md:inline">Details</span>
-            </button>
           </div>
+
+          {/* Sort Toggle Button */}
+          <button
+            type="button"
+            onClick={() => toggleSort(sortField === 'name' ? 'updatedAt' : 'name')}
+            className="p-1.5 rounded flex items-center gap-1 bg-[#1e1e1e] hover:bg-[#333333] text-[#cccccc] hover:text-white transition-colors border border-[#3c3c3c]"
+            title={`Sort by ${sortField === 'name' ? 'Name' : 'Date modified'} (${sortDirection === 'asc' ? 'Ascending' : 'Descending'})`}
+          >
+            <ArrowUpDown className="w-3.5 h-3.5 text-sky-400" />
+            <span className="text-[11px] px-1 hidden lg:inline">
+              {sortField === 'name' ? 'Name' : 'Date'} ({sortDirection.toUpperCase()})
+            </span>
+          </button>
 
           {/* Toggle Preview Pane */}
           <button
             type="button"
-            onClick={() => setShowPreviewPane(!showPreviewPane)}
-            className={`p-1.5 rounded border border-[#3c3c3c] ${showPreviewPane ? 'bg-[#007acc]/20 text-sky-400 border-[#007acc]' : 'bg-[#1e1e1e] text-[#858585] hover:text-white'}`}
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                if (!selectedItem && (currentItems.files[0] || currentItems.folders[0])) {
+                  const first = currentItems.files[0] || currentItems.folders[0];
+                  setSelectedItem({ id: first.id, type: 'files' in first ? 'file' : 'folder' });
+                }
+                setShowMobilePreview((prev) => !prev);
+              } else {
+                setShowPreviewPane((prev) => !prev);
+              }
+            }}
+            className={`p-1.5 rounded border border-[#3c3c3c] ${
+              showPreviewPane || showMobilePreview
+                ? 'bg-[#007acc]/20 text-sky-400 border-[#007acc]'
+                : 'bg-[#1e1e1e] text-[#858585] hover:text-white'
+            }`}
             title="Toggle Details & Code Preview Pane"
           >
             <Info className="w-3.5 h-3.5" />
@@ -1136,85 +1377,98 @@ export function WindowsExplorerView({
       </div>
 
       {/* NAVIGATION BAR & ADDRESS BAR */}
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1e1e1e] border-b border-[#2d2d2d] shrink-0 text-xs">
-        {/* Back / Forward / Up / Home / Refresh */}
-        <div className="flex items-center gap-0.5 shrink-0">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 sm:gap-2 px-3 py-1.5 bg-[#1e1e1e] border-b border-[#2d2d2d] shrink-0 text-xs">
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          {/* Mobile Navigation Drawer Toggle button */}
           <button
             type="button"
-            onClick={handleGoBack}
-            disabled={!canGoBack}
-            className="p-1.5 rounded hover:bg-[#2d2d2d] disabled:opacity-30 disabled:hover:bg-transparent text-[#cccccc] hover:text-white transition-colors"
-            title="Back (Alt+Left)"
+            onClick={() => setShowMobileNav(true)}
+            className="p-1.5 rounded bg-[#252526] hover:bg-[#2d2d2d] text-sky-400 border border-[#3c3c3c] md:hidden shrink-0 flex items-center gap-1"
+            title="Open Quick Access & Folders"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <PanelLeft className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-medium hidden xs:inline">Folders</span>
           </button>
-          <button
-            type="button"
-            onClick={handleGoForward}
-            disabled={!canGoForward}
-            className="p-1.5 rounded hover:bg-[#2d2d2d] disabled:opacity-30 disabled:hover:bg-transparent text-[#cccccc] hover:text-white transition-colors"
-            title="Forward (Alt+Right)"
-          >
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={handleGoUp}
-            disabled={!canGoUp}
-            className="p-1.5 rounded hover:bg-[#2d2d2d] disabled:opacity-30 disabled:hover:bg-transparent text-[#cccccc] hover:text-white transition-colors"
-            title={currentFolderId === null ? 'Up to Home (All Folders)' : 'Up to Parent Directory'}
-          >
-            <ArrowUp className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => navigateToFolder(HOME_FOLDER_ID)}
-            className={`p-1.5 rounded hover:bg-[#2d2d2d] transition-colors ${
-              isHome ? 'text-sky-400 bg-[#2d2d2d]' : 'text-[#cccccc] hover:text-white'
-            }`}
-            title="Home (All Folders)"
-          >
-            <Home className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => navigateToFolder(currentFolderId)}
-            className="p-1.5 rounded hover:bg-[#2d2d2d] text-[#cccccc] hover:text-white transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-          </button>
-        </div>
 
-        {/* Windows Clickable Breadcrumb Address Bar */}
-        <div className="flex-1 flex items-center bg-[#252526] hover:bg-[#2a2d2e] border border-[#3c3c3c] focus-within:border-[#007acc] rounded px-2 py-1 overflow-x-auto no-scrollbar gap-1 transition-colors">
-          {isHome ? (
-            <Home className="w-3.5 h-3.5 text-sky-400 shrink-0 mr-1" />
-          ) : (
-            <Monitor className="w-3.5 h-3.5 text-[#007acc] shrink-0 mr-1" />
-          )}
-          {breadcrumbSegments.map((seg, idx) => {
-            const isLast = idx === breadcrumbSegments.length - 1;
-            return (
-              <React.Fragment key={seg.id || 'root'}>
-                <button
-                  type="button"
-                  onClick={() => navigateToFolder(seg.id)}
-                  className={`px-1.5 py-0.5 rounded transition-colors whitespace-nowrap flex items-center gap-1 ${
-                    isLast ? 'font-semibold text-white bg-[#333333]' : 'text-[#858585] hover:text-white hover:bg-[#333333]'
-                  }`}
-                >
-                  {seg.isHome && <Home className="w-3 h-3 text-sky-400 shrink-0" />}
-                  <span>{seg.name}</span>
-                </button>
-                {!isLast && <ChevronRight className="w-3 h-3 text-[#555555] shrink-0" />}
-              </React.Fragment>
-            );
-          })}
+          {/* Back / Forward / Up / Home / Refresh */}
+          <div className="flex items-center gap-0.5 shrink-0">
+            <button
+              type="button"
+              onClick={handleGoBack}
+              disabled={!canGoBack}
+              className="p-1.5 rounded hover:bg-[#2d2d2d] disabled:opacity-30 disabled:hover:bg-transparent text-[#cccccc] hover:text-white transition-colors"
+              title="Back (Alt+Left)"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={handleGoForward}
+              disabled={!canGoForward}
+              className="p-1.5 rounded hover:bg-[#2d2d2d] disabled:opacity-30 disabled:hover:bg-transparent text-[#cccccc] hover:text-white transition-colors"
+              title="Forward (Alt+Right)"
+            >
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={handleGoUp}
+              disabled={!canGoUp}
+              className="p-1.5 rounded hover:bg-[#2d2d2d] disabled:opacity-30 disabled:hover:bg-transparent text-[#cccccc] hover:text-white transition-colors"
+              title={currentFolderId === null ? 'Up to Home (All Folders)' : 'Up to Parent Directory'}
+            >
+              <ArrowUp className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateToFolder(HOME_FOLDER_ID)}
+              className={`p-1.5 rounded hover:bg-[#2d2d2d] transition-colors ${
+                isHome ? 'text-sky-400 bg-[#2d2d2d]' : 'text-[#cccccc] hover:text-white'
+              }`}
+              title="Home (All Folders)"
+            >
+              <Home className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateToFolder(currentFolderId)}
+              className="p-1.5 rounded hover:bg-[#2d2d2d] text-[#cccccc] hover:text-white transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Windows Clickable Breadcrumb Address Bar */}
+          <div className="flex-1 min-w-0 flex items-center bg-[#252526] hover:bg-[#2a2d2e] border border-[#3c3c3c] focus-within:border-[#007acc] rounded px-2 py-1 overflow-x-auto no-scrollbar gap-1 transition-colors">
+            {isHome ? (
+              <Home className="w-3.5 h-3.5 text-sky-400 shrink-0 mr-1" />
+            ) : (
+              <Monitor className="w-3.5 h-3.5 text-[#007acc] shrink-0 mr-1" />
+            )}
+            {breadcrumbSegments.map((seg, idx) => {
+              const isLast = idx === breadcrumbSegments.length - 1;
+              return (
+                <React.Fragment key={seg.id || 'root'}>
+                  <button
+                    type="button"
+                    onClick={() => navigateToFolder(seg.id)}
+                    className={`px-1.5 py-0.5 rounded transition-colors whitespace-nowrap flex items-center gap-1 ${
+                      isLast ? 'font-semibold text-white bg-[#333333]' : 'text-[#858585] hover:text-white hover:bg-[#333333]'
+                    }`}
+                  >
+                    {seg.isHome && <Home className="w-3 h-3 text-sky-400 shrink-0" />}
+                    <span>{seg.name}</span>
+                  </button>
+                  {!isLast && <ChevronRight className="w-3 h-3 text-[#555555] shrink-0" />}
+                </React.Fragment>
+              );
+            })}
+          </div>
         </div>
 
         {/* Search Input */}
-        <div className="relative flex items-center w-40 sm:w-60 shrink-0">
+        <div className="relative flex items-center w-full sm:w-56 shrink-0">
           <Search className="w-3.5 h-3.5 absolute left-2 text-[#6e6e6e]" />
           <input
             type="text"
@@ -1271,86 +1525,36 @@ export function WindowsExplorerView({
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* LEFT NAVIGATION PANE (Windows Quick Access / Folder Tree) */}
         <div className="w-56 bg-[#181818] border-r border-[#2d2d2d] flex flex-col overflow-y-auto p-2 shrink-0 hidden md:flex">
-          <div className="text-[10px] text-[#858585] uppercase font-bold tracking-wider mb-1 px-2">
-            Quick Access
-          </div>
-
-          {/* Home Directory entry */}
-          <div
-            onClick={() => navigateToFolder(HOME_FOLDER_ID)}
-            className={`flex items-center justify-between px-2.5 py-1.5 rounded cursor-pointer text-xs mb-1 transition-colors ${
-              isHome
-                ? 'bg-[#007acc] text-white font-medium shadow-sm'
-                : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-2 truncate">
-              <Home className={`w-4 h-4 shrink-0 ${isHome ? 'text-white' : 'text-sky-400'}`} />
-              <span className="truncate">Home (All Folders)</span>
-            </div>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                isHome ? 'bg-white/20 text-white' : 'bg-[#252526] text-[#858585]'
-              }`}
-            >
-              {folders.length}
-            </span>
-          </div>
-
-          {/* Quick Access Top-Level Folders */}
-          {projectsFolder && (
-            <div
-              onClick={() => navigateToFolder(projectsFolder.id)}
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer text-xs mb-1 transition-colors ${
-                currentFolderId === projectsFolder.id
-                  ? 'bg-[#007acc] text-white font-medium shadow-sm'
-                  : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white'
-              }`}
-            >
-              <Folder className={`w-4 h-4 shrink-0 ${currentFolderId === projectsFolder.id ? 'text-white' : 'text-[#dcb67a]'}`} />
-              <span className="truncate">Projects</span>
-            </div>
-          )}
-
-          {templatesFolder && (
-            <div
-              onClick={() => navigateToFolder(templatesFolder.id)}
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer text-xs mb-1 transition-colors ${
-                currentFolderId === templatesFolder.id
-                  ? 'bg-[#007acc] text-white font-medium shadow-sm'
-                  : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white'
-              }`}
-            >
-              <Folder className={`w-4 h-4 shrink-0 ${currentFolderId === templatesFolder.id ? 'text-white' : 'text-[#dcb67a]'}`} />
-              <span className="truncate">Templates</span>
-            </div>
-          )}
-
-          {/* Active Workspace Pin if set */}
-          {activeWorkspaceRootId && activeWorkspaceFolder && (
-            <div
-              onClick={() => navigateToFolder(activeWorkspaceRootId)}
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer text-xs mb-1 transition-colors ${
-                currentFolderId === activeWorkspaceRootId
-                  ? 'bg-[#007acc] text-white font-medium shadow-sm'
-                  : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white'
-              }`}
-              title="Currently Open Workspace Folder in Code Editor"
-            >
-              <FolderOpen className={`w-4 h-4 shrink-0 ${currentFolderId === activeWorkspaceRootId ? 'text-white' : 'text-sky-400'}`} />
-              <span className="truncate font-medium">{activeWorkspaceFolder.name} (Active)</span>
-            </div>
-          )}
-
-          <div className="text-[10px] text-[#858585] uppercase font-bold tracking-wider mt-2 mb-1 px-2">
-            Folders
-          </div>
-
-          {/* Recursive Left Folder Tree */}
-          <div className="flex flex-col gap-0.5">
-            {leftTreeNodes.map((node) => renderLeftTreeNode(node))}
-          </div>
+          {renderNavigationItems(false)}
         </div>
+
+        {/* MOBILE NAVIGATION DRAWER */}
+        {showMobileNav && (
+          <div className="fixed inset-0 z-50 flex md:hidden">
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+              onClick={() => setShowMobileNav(false)}
+            />
+            <div className="relative w-72 max-w-[85vw] h-full bg-[#181818] border-r border-[#2d2d2d] shadow-2xl flex flex-col p-3 overflow-y-auto z-10 animate-in slide-in-from-left duration-200">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#2d2d2d] shrink-0">
+                <div className="flex items-center gap-2">
+                  <FolderTree className="w-4 h-4 text-sky-400" />
+                  <span className="font-semibold text-white text-xs">Explorer Navigation</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowMobileNav(false)}
+                  className="p-1 rounded text-[#858585] hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {renderNavigationItems(true)}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* CENTER DIRECTORY CANVAS */}
         <div
@@ -1433,35 +1637,37 @@ export function WindowsExplorerView({
             /* NESTED TREE VIEW: FOLDERS & FILES HIERARCHICALLY NESTED */
             <div className="flex flex-col flex-1">
               {/* Nested Toolbar Header */}
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#2d2d2d] shrink-0">
-                <div className="flex items-center gap-2">
-                  <FolderTree className="w-4 h-4 text-sky-400" />
-                  <h2 className="text-sm font-semibold text-white tracking-wide">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 mb-2 border-b border-[#2d2d2d] shrink-0">
+                <div className="flex items-center gap-2 min-w-0 flex-wrap xs:flex-nowrap">
+                  <FolderTree className="w-4 h-4 text-sky-400 shrink-0" />
+                  <h2 className="text-xs sm:text-sm font-semibold text-white tracking-wide truncate">
                     {isHome ? 'Project Structure (Nested)' : `${currentFolder?.name || 'Folder'} (Nested)`}
                   </h2>
-                  <span className="px-2 py-0.5 rounded-full text-[11px] bg-[#2a2d2e] text-[#858585] font-mono">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] bg-[#2a2d2e] text-[#858585] font-mono whitespace-nowrap shrink-0">
                     {folders.length} {folders.length === 1 ? 'folder' : 'folders'}, {files.length} {files.length === 1 ? 'file' : 'files'}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
                   <button
                     type="button"
                     onClick={expandAllCanvasFolders}
-                    className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#252526] hover:bg-[#333333] border border-[#3c3c3c] text-xs text-[#cccccc] hover:text-white transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 rounded bg-[#252526] hover:bg-[#333333] border border-[#3c3c3c] text-xs text-[#cccccc] hover:text-white transition-colors shrink-0"
                     title="Expand all folders"
                   >
-                    <FolderOpen className="w-3 h-3 text-[#dcb67a]" />
-                    <span className="text-[11px]">Expand All</span>
+                    <FolderOpen className="w-3 h-3 text-[#dcb67a] shrink-0" />
+                    <span className="text-[11px] hidden sm:inline">Expand All</span>
+                    <span className="text-[11px] sm:hidden">Expand</span>
                   </button>
                   <button
                     type="button"
                     onClick={collapseAllCanvasFolders}
-                    className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#252526] hover:bg-[#333333] border border-[#3c3c3c] text-xs text-[#cccccc] hover:text-white transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 rounded bg-[#252526] hover:bg-[#333333] border border-[#3c3c3c] text-xs text-[#cccccc] hover:text-white transition-colors shrink-0"
                     title="Collapse all folders"
                   >
-                    <FolderMinus className="w-3 h-3" />
-                    <span className="text-[11px]">Collapse All</span>
+                    <FolderMinus className="w-3 h-3 shrink-0" />
+                    <span className="text-[11px] hidden sm:inline">Collapse All</span>
+                    <span className="text-[11px] sm:hidden">Collapse</span>
                   </button>
                   <button
                     type="button"
@@ -1470,11 +1676,12 @@ export function WindowsExplorerView({
                       setNewItemName('');
                       setCreateError(null);
                     }}
-                    className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#007acc] hover:bg-[#1177bb] text-xs text-white font-medium transition-colors ml-1"
+                    className="flex items-center gap-1 px-2 py-1 rounded bg-[#007acc] hover:bg-[#1177bb] text-xs text-white font-medium transition-colors shrink-0"
                     title="New folder in root"
                   >
-                    <FolderPlus className="w-3 h-3" />
-                    <span className="text-[11px]">New Folder</span>
+                    <FolderPlus className="w-3 h-3 shrink-0" />
+                    <span className="text-[11px] hidden xs:inline">New Folder</span>
+                    <span className="text-[11px] xs:hidden">+Folder</span>
                   </button>
                   <button
                     type="button"
@@ -1483,11 +1690,12 @@ export function WindowsExplorerView({
                       setNewItemName('');
                       setCreateError(null);
                     }}
-                    className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#252526] hover:bg-[#333333] border border-[#3c3c3c] text-xs text-white font-medium transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 rounded bg-[#252526] hover:bg-[#333333] border border-[#3c3c3c] text-xs text-white font-medium transition-colors shrink-0"
                     title="New file in root"
                   >
-                    <FilePlus className="w-3 h-3 text-[#007acc]" />
-                    <span className="text-[11px]">New File</span>
+                    <FilePlus className="w-3 h-3 text-[#007acc] shrink-0" />
+                    <span className="text-[11px] hidden xs:inline">New File</span>
+                    <span className="text-[11px] xs:hidden">+File</span>
                   </button>
                 </div>
               </div>
@@ -1583,8 +1791,8 @@ export function WindowsExplorerView({
                       <span>Create First Folder</span>
                     </button>
                   </div>
-                ) : viewMode === 'grid' ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
                     {homeFolders.map((folder) => {
                       const isSelected = selectedItem?.id === folder.id;
                       const isDragTarget = dragOverTargetId === folder.id;
@@ -1603,7 +1811,7 @@ export function WindowsExplorerView({
                           }}
                           onDoubleClick={() => navigateToFolder(folder.id)}
                           onContextMenu={(e) => openContextMenu(e, 'folder', folder.id, folder.name, folder.path)}
-                          className={`flex flex-col p-3 rounded-lg border cursor-pointer transition-all group ${
+                          className={`flex flex-col p-2.5 sm:p-3 rounded-lg border cursor-pointer transition-all group ${
                             isSelected
                               ? 'bg-[#007acc]/20 border-[#007acc] shadow-lg'
                               : isDragTarget
@@ -1612,7 +1820,7 @@ export function WindowsExplorerView({
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <Folder className="w-10 h-10 text-[#dcb67a] drop-shadow" />
+                            <Folder className="w-8 h-8 sm:w-10 sm:h-10 text-[#dcb67a] drop-shadow" />
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1e1e1e] text-[#858585] group-hover:text-white font-mono">
                               {counts.fileCount} {counts.fileCount === 1 ? 'file' : 'files'}
                             </span>
@@ -1623,55 +1831,6 @@ export function WindowsExplorerView({
                           <span className="text-[10px] text-[#858585] truncate font-mono" title={folder.path}>
                             {folder.path}
                           </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  /* Details View for All Folders in Home */
-                  <div className="flex flex-col border border-[#2d2d2d] rounded overflow-hidden">
-                    <div className="flex items-center px-3 py-1.5 bg-[#252526] text-[#858585] font-semibold text-[11px] border-b border-[#2d2d2d]">
-                      <div className="flex-1">Name</div>
-                      <div className="w-48 hidden sm:block">Path</div>
-                      <div className="w-36 hidden md:block">Modified</div>
-                      <div className="w-24 text-right">Items</div>
-                    </div>
-                    {homeFolders.map((folder) => {
-                      const isSelected = selectedItem?.id === folder.id;
-                      const counts = getFolderDescendantCounts(folder.id, folders, files);
-
-                      return (
-                        <div
-                          key={folder.id}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, folder.id, 'folder', folder.name)}
-                          onDragOver={(e) => handleDragOver(e, folder.id)}
-                          onDrop={(e) => handleDrop(e, folder.id)}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedItem({ id: folder.id, type: 'folder' });
-                          }}
-                          onDoubleClick={() => navigateToFolder(folder.id)}
-                          onContextMenu={(e) => openContextMenu(e, 'folder', folder.id, folder.name, folder.path)}
-                          className={`flex items-center px-3 py-2 cursor-pointer border-b border-[#2d2d2d] transition-colors ${
-                            isSelected
-                              ? 'bg-[#007acc]/20 text-white font-medium'
-                              : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white'
-                          }`}
-                        >
-                          <div className="flex-1 flex items-center gap-2 truncate pr-2">
-                            <Folder className="w-4 h-4 text-[#dcb67a] shrink-0" />
-                            <span className="truncate font-medium">{folder.name}</span>
-                          </div>
-                          <div className="w-48 text-[11px] text-[#858585] font-mono truncate hidden sm:block">
-                            {folder.path}
-                          </div>
-                          <div className="w-36 text-[11px] text-[#858585] hidden md:block">
-                            {formatDate(folder.updatedAt)}
-                          </div>
-                          <div className="w-24 text-right text-[11px] text-[#858585]">
-                            {counts.fileCount} files
-                          </div>
                         </div>
                       );
                     })}
@@ -1692,89 +1851,41 @@ export function WindowsExplorerView({
                     </div>
                   </div>
 
-                  {viewMode === 'grid' ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                      {recentFiles.slice(0, 12).map((file) => {
-                        const isSelected = selectedItem?.id === file.id;
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
+                    {recentFiles.slice(0, 12).map((file) => {
+                      const isSelected = selectedItem?.id === file.id;
 
-                        return (
-                          <div
-                            key={file.id}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, file.id, 'file', file.name)}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedItem({ id: file.id, type: 'file' });
-                              onSelectFile?.(file.id);
-                            }}
-                            onDoubleClick={() => onOpenFileInEditor(file.id)}
-                            onContextMenu={(e) => openContextMenu(e, 'file', file.id, file.name, file.path)}
-                            className={`flex flex-col items-center justify-center p-3 rounded-lg border cursor-pointer transition-all ${
-                              isSelected
-                                ? 'bg-[#007acc]/20 border-[#007acc] shadow-md'
-                                : 'bg-[#252526]/60 hover:bg-[#2a2d2e] border-[#333333] hover:border-[#444444]'
-                            }`}
-                          >
-                            <div className="w-10 h-10 flex items-center justify-center mb-1.5 drop-shadow">
-                              {getFileIcon(file.name, file.language)}
-                            </div>
-                            <span className="text-xs font-medium text-center truncate max-w-full text-white">
-                              {file.name}
-                            </span>
-                            <span className="text-[10px] text-[#858585] truncate max-w-full font-mono mt-0.5">
-                              {file.path}
-                            </span>
+                      return (
+                        <div
+                          key={file.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, file.id, 'file', file.name)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedItem({ id: file.id, type: 'file' });
+                            onSelectFile?.(file.id);
+                          }}
+                          onDoubleClick={() => onOpenFileInEditor(file.id)}
+                          onContextMenu={(e) => openContextMenu(e, 'file', file.id, file.name, file.path)}
+                          className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-lg border cursor-pointer transition-all ${
+                            isSelected
+                              ? 'bg-[#007acc]/20 border-[#007acc] shadow-md'
+                              : 'bg-[#252526]/60 hover:bg-[#2a2d2e] border-[#333333] hover:border-[#444444]'
+                          }`}
+                        >
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center mb-1.5 drop-shadow">
+                            {getFileIcon(file.name, file.language)}
                           </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col border border-[#2d2d2d] rounded overflow-hidden">
-                      <div className="flex items-center px-3 py-1.5 bg-[#252526] text-[#858585] font-semibold text-[11px] border-b border-[#2d2d2d]">
-                        <div className="flex-1">Name</div>
-                        <div className="w-48 hidden sm:block">Location</div>
-                        <div className="w-36 hidden md:block">Modified</div>
-                        <div className="w-24 text-right">Size</div>
-                      </div>
-                      {recentFiles.slice(0, 15).map((file) => {
-                        const isSelected = selectedItem?.id === file.id;
-
-                        return (
-                          <div
-                            key={file.id}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, file.id, 'file', file.name)}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedItem({ id: file.id, type: 'file' });
-                              onSelectFile?.(file.id);
-                            }}
-                            onDoubleClick={() => onOpenFileInEditor(file.id)}
-                            onContextMenu={(e) => openContextMenu(e, 'file', file.id, file.name, file.path)}
-                            className={`flex items-center px-3 py-1.5 cursor-pointer border-b border-[#2d2d2d] transition-colors ${
-                              isSelected
-                                ? 'bg-[#007acc]/20 text-white font-medium'
-                                : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white'
-                            }`}
-                          >
-                            <div className="flex-1 flex items-center gap-2 truncate pr-2">
-                              {getFileIcon(file.name, file.language)}
-                              <span className="truncate">{file.name}</span>
-                            </div>
-                            <div className="w-48 text-[11px] text-[#858585] font-mono truncate hidden sm:block">
-                              {file.path}
-                            </div>
-                            <div className="w-36 text-[11px] text-[#858585] hidden md:block">
-                              {formatDate(file.updatedAt)}
-                            </div>
-                            <div className="w-24 text-right text-[11px] text-[#858585]">
-                              {formatBytes(file.content?.length || 0)}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          <span className="text-xs font-medium text-center truncate max-w-full text-white">
+                            {file.name}
+                          </span>
+                          <span className="text-[10px] text-[#858585] truncate max-w-full font-mono mt-0.5">
+                            {file.path}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -1801,9 +1912,9 @@ export function WindowsExplorerView({
                 </button>
               </div>
             </div>
-          ) : viewMode === 'grid' ? (
+          ) : (
             /* GRID VIEW (Large Icons Cards) */
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
               {/* Folder Cards */}
               {currentItems.folders.map((folder) => {
                 const isSelected = selectedItem?.id === folder.id;
@@ -1891,238 +2002,27 @@ export function WindowsExplorerView({
                 );
               })}
             </div>
-          ) : (
-            /* DETAILS VIEW (Table View) */
-            <div className="flex flex-col w-full text-xs">
-              {/* Table Header */}
-              <div className="flex items-center px-3 py-1.5 bg-[#252526] border-b border-[#3c3c3c] text-[#858585] font-semibold select-none sticky top-0 z-10">
-                <div
-                  onClick={() => toggleSort('name')}
-                  className="flex-1 flex items-center gap-1 cursor-pointer hover:text-white"
-                >
-                  <span>Name</span>
-                  {sortField === 'name' && (
-                    <ArrowUpDown className="w-3 h-3 text-[#007acc]" />
-                  )}
-                </div>
-                <div
-                  onClick={() => toggleSort('updatedAt')}
-                  className="w-40 flex items-center gap-1 cursor-pointer hover:text-white hidden sm:flex"
-                >
-                  <span>Date modified</span>
-                  {sortField === 'updatedAt' && (
-                    <ArrowUpDown className="w-3 h-3 text-[#007acc]" />
-                  )}
-                </div>
-                <div
-                  onClick={() => toggleSort('type')}
-                  className="w-36 flex items-center gap-1 cursor-pointer hover:text-white hidden md:flex"
-                >
-                  <span>Type</span>
-                  {sortField === 'type' && (
-                    <ArrowUpDown className="w-3 h-3 text-[#007acc]" />
-                  )}
-                </div>
-                <div
-                  onClick={() => toggleSort('size')}
-                  className="w-24 flex items-center justify-end gap-1 cursor-pointer hover:text-white"
-                >
-                  <span>Size</span>
-                  {sortField === 'size' && (
-                    <ArrowUpDown className="w-3 h-3 text-[#007acc]" />
-                  )}
-                </div>
-              </div>
-
-              {/* Folder Rows */}
-              {currentItems.folders.map((folder) => {
-                const isSelected = selectedItem?.id === folder.id;
-
-                return (
-                  <div
-                    key={folder.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, folder.id, 'folder', folder.name)}
-                    onDragOver={(e) => handleDragOver(e, folder.id)}
-                    onDrop={(e) => handleDrop(e, folder.id)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedItem({ id: folder.id, type: 'folder' });
-                    }}
-                    onDoubleClick={() => navigateToFolder(folder.id)}
-                    onContextMenu={(e) => openContextMenu(e, 'folder', folder.id, folder.name, folder.path)}
-                    className={`flex items-center px-3 py-1.5 cursor-pointer border-b border-[#2d2d2d] transition-colors ${
-                      isSelected
-                        ? 'bg-[#007acc]/20 text-white font-medium'
-                        : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white'
-                    }`}
-                  >
-                    <div className="flex-1 flex items-center gap-2 truncate pr-2">
-                      <Folder className="w-4 h-4 text-[#dcb67a] shrink-0" />
-                      <span className="truncate">{folder.name}</span>
-                    </div>
-                    <div className="w-40 text-[11px] text-[#858585] hidden sm:block">
-                      {formatDate(folder.updatedAt)}
-                    </div>
-                    <div className="w-36 text-[11px] text-[#858585] hidden md:block">
-                      File folder
-                    </div>
-                    <div className="w-24 text-right text-[11px] text-[#858585]">-</div>
-                  </div>
-                );
-              })}
-
-              {/* File Rows */}
-              {currentItems.files.map((file) => {
-                const isSelected = selectedItem?.id === file.id;
-
-                return (
-                  <div
-                    key={file.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, file.id, 'file', file.name)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedItem({ id: file.id, type: 'file' });
-                      onSelectFile?.(file.id);
-                    }}
-                    onDoubleClick={() => onOpenFileInEditor(file.id)}
-                    onContextMenu={(e) => openContextMenu(e, 'file', file.id, file.name, file.path)}
-                    className={`flex items-center px-3 py-1.5 cursor-pointer border-b border-[#2d2d2d] transition-colors ${
-                      isSelected
-                        ? 'bg-[#007acc]/20 text-white font-medium'
-                        : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white'
-                    }`}
-                  >
-                    <div className="flex-1 flex items-center gap-2 truncate pr-2">
-                      {getFileIcon(file.name, file.language)}
-                      <span className="truncate">{file.name}</span>
-                    </div>
-                    <div className="w-40 text-[11px] text-[#858585] hidden sm:block">
-                      {formatDate(file.updatedAt)}
-                    </div>
-                    <div className="w-36 text-[11px] text-[#858585] hidden md:block">
-                      {getFileDescription(file.name, file.language)}
-                    </div>
-                    <div className="w-24 text-right text-[11px] text-[#858585]">
-                      {formatBytes(file.content?.length || 0)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           )}
         </div>
 
-        {/* RIGHT PREVIEW / DETAILS PANE (Windows 11 Details Pane) */}
+        {/* RIGHT PREVIEW / DETAILS PANE (Desktop) */}
         {showPreviewPane && (selectedFile || selectedFolder) && (
-          <div className="w-72 bg-[#181818] border-l border-[#2d2d2d] flex flex-col p-3 text-xs overflow-y-auto shrink-0 hidden lg:flex">
-            <div className="flex items-center justify-between pb-2 border-b border-[#2d2d2d] mb-3">
-              <span className="font-semibold text-white">Item Details</span>
-              <button
-                type="button"
-                onClick={() => setShowPreviewPane(false)}
-                className="text-[#858585] hover:text-white"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {selectedFile ? (
-              <div className="flex flex-col gap-3">
-                {/* Big Icon & Name */}
-                <div className="flex flex-col items-center p-3 bg-[#252526] rounded border border-[#2d2d2d]">
-                  <div className="mb-2">
-                    {getFileIcon(selectedFile.name, selectedFile.language)}
-                  </div>
-                  <span className="font-medium text-center text-white break-all">
-                    {selectedFile.name}
-                  </span>
-                  <span className="text-[10px] text-[#858585] mt-0.5">
-                    {getFileDescription(selectedFile.name, selectedFile.language)}
-                  </span>
-                </div>
-
-                {/* Properties */}
-                <div className="flex flex-col gap-1.5 text-[11px]">
-                  <div className="flex justify-between py-1 border-b border-[#2d2d2d]">
-                    <span className="text-[#858585]">Size:</span>
-                    <span className="text-white font-mono">{formatBytes(selectedFile.content?.length || 0)}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-[#2d2d2d]">
-                    <span className="text-[#858585]">Path:</span>
-                    <span className="text-white font-mono truncate max-w-[150px]">{selectedFile.path}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-[#2d2d2d]">
-                    <span className="text-[#858585]">Modified:</span>
-                    <span className="text-white">{formatDate(selectedFile.updatedAt)}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-[#2d2d2d]">
-                    <span className="text-[#858585]">Lines:</span>
-                    <span className="text-white font-mono">{(selectedFile.content || '').split('\n').length}</span>
-                  </div>
-                </div>
-
-                {/* Open in Editor CTA */}
-                <button
-                  type="button"
-                  onClick={() => onOpenFileInEditor(selectedFile.id)}
-                  className="w-full py-1.5 bg-[#007acc] hover:bg-[#1177bb] text-white rounded font-medium flex items-center justify-center gap-2 transition-colors mt-1"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Open in Monaco Editor</span>
-                </button>
-
-                {/* Code Snippet Preview */}
-                <div className="flex flex-col gap-1 mt-1">
-                  <span className="text-[10px] text-[#858585] uppercase font-bold tracking-wider">Preview</span>
-                  <div className="p-2 bg-[#141414] border border-[#2d2d2d] rounded text-[10px] font-mono text-[#cccccc] max-h-48 overflow-hidden select-text whitespace-pre-wrap opacity-80">
-                    {selectedFile.content?.slice(0, 400) || '// (Empty file)'}
-                    {(selectedFile.content?.length || 0) > 400 && '\n...'}
-                  </div>
-                </div>
-              </div>
-            ) : selectedFolder ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col items-center p-3 bg-[#252526] rounded border border-[#2d2d2d]">
-                  <Folder className="w-12 h-12 text-[#dcb67a] mb-2" />
-                  <span className="font-medium text-center text-white break-all">{selectedFolder.name}</span>
-                  <span className="text-[10px] text-[#858585] mt-0.5">File folder</span>
-                </div>
-
-                <div className="flex flex-col gap-1.5 text-[11px]">
-                  <div className="flex justify-between py-1 border-b border-[#2d2d2d]">
-                    <span className="text-[#858585]">Path:</span>
-                    <span className="text-white font-mono truncate max-w-[150px]">{selectedFolder.path}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-[#2d2d2d]">
-                    <span className="text-[#858585]">Modified:</span>
-                    <span className="text-white">{formatDate(selectedFolder.updatedAt)}</span>
-                  </div>
-                  {(() => {
-                    const counts = getFolderDescendantCounts(selectedFolder.id, folders, files);
-                    return (
-                      <>
-                        <div className="flex justify-between py-1 border-b border-[#2d2d2d]">
-                          <span className="text-[#858585]">Contains:</span>
-                          <span className="text-white">{counts.fileCount} files, {counts.folderCount} folders</span>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => navigateToFolder(selectedFolder.id)}
-                  className="w-full py-1.5 bg-[#007acc] hover:bg-[#1177bb] text-white rounded font-medium flex items-center justify-center gap-2 transition-colors mt-1"
-                >
-                  <FolderOpen className="w-3.5 h-3.5" />
-                  <span>Open Folder</span>
-                </button>
-              </div>
-            ) : null}
+          <div className="hidden lg:flex w-72 bg-[#181818] border-l border-[#2d2d2d] flex-col p-3 text-xs overflow-y-auto shrink-0">
+            {renderPreviewContent(() => setShowPreviewPane(false))}
           </div>
+        )}
+
+        {/* RIGHT PREVIEW / DETAILS PANE (Mobile / Tablet Slide-over Drawer) */}
+        {showMobilePreview && (selectedFile || selectedFolder) && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden"
+              onClick={() => setShowMobilePreview(false)}
+            />
+            <div className="fixed inset-y-0 right-0 z-50 w-80 max-w-[85vw] bg-[#181818] border-l border-[#2d2d2d] flex flex-col p-3 text-xs overflow-y-auto shadow-2xl lg:hidden animate-in slide-in-from-right duration-200">
+              {renderPreviewContent(() => setShowMobilePreview(false))}
+            </div>
+          </>
         )}
       </div>
 
@@ -2142,7 +2042,7 @@ export function WindowsExplorerView({
         </div>
 
         <div className="flex items-center gap-2">
-          <span>Windows File Explorer Mode</span>
+          <span className="hidden sm:inline">Windows File Explorer Mode</span>
         </div>
       </div>
 
@@ -2191,6 +2091,21 @@ export function WindowsExplorerView({
                 <Copy className="w-3.5 h-3.5" />
                 <span>Duplicate</span>
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (contextMenu.targetId) {
+                    setSelectedItem({ id: contextMenu.targetId, type: 'file' });
+                    setShowMobilePreview(true);
+                    setShowPreviewPane(true);
+                  }
+                  setContextMenu(null);
+                }}
+                className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex items-center gap-2"
+              >
+                <Info className="w-3.5 h-3.5 text-sky-400" />
+                <span>Details & Preview</span>
+              </button>
               <div className="h-px bg-[#333333] my-1" />
               <button
                 type="button"
@@ -2232,6 +2147,21 @@ export function WindowsExplorerView({
               >
                 <Edit2 className="w-3.5 h-3.5" />
                 <span>Rename</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (contextMenu.targetId) {
+                    setSelectedItem({ id: contextMenu.targetId, type: 'folder' });
+                    setShowMobilePreview(true);
+                    setShowPreviewPane(true);
+                  }
+                  setContextMenu(null);
+                }}
+                className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex items-center gap-2"
+              >
+                <Info className="w-3.5 h-3.5 text-sky-400" />
+                <span>Properties</span>
               </button>
               {onOpenFolderAsWorkspace && (
                 <button
@@ -2295,13 +2225,13 @@ export function WindowsExplorerView({
               <button
                 type="button"
                 onClick={() => {
-                  setViewMode(viewMode === 'nested' ? 'grid' : viewMode === 'grid' ? 'details' : 'nested');
+                  setViewMode(viewMode === 'nested' ? 'grid' : 'nested');
                   setContextMenu(null);
                 }}
                 className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex items-center gap-2"
               >
                 <FolderTree className="w-3.5 h-3.5" />
-                <span>Toggle View (Nested / Grid / Details)</span>
+                <span>Toggle View ({viewMode === 'nested' ? 'Grid' : 'Nested'})</span>
               </button>
             </>
           )}

@@ -162,7 +162,7 @@ function TreeNodeItem({
           }}
           title="Click to toggle, double-click to open folder in editor"
           style={{ paddingLeft: `${node.depth * 14 + 10}px` }}
-          className={`group flex items-center justify-between py-1 pr-2 cursor-pointer transition-colors text-xs ${
+          className={`group flex items-center justify-between py-1 min-h-[28px] pr-2 cursor-pointer transition-colors text-xs select-none ${
             isTargetDrag
               ? 'bg-[#007acc]/25 border-l-2 border-[#007acc] text-white'
               : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white border-l-2 border-transparent'
@@ -214,9 +214,9 @@ function TreeNodeItem({
             )}
           </div>
 
-          {/* Hover / Quick Action Icons */}
+          {/* Quick Action Icons */}
           {!isRenaming && (
-            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
               <button
                 type="button"
                 onClick={(e) => {
@@ -350,7 +350,7 @@ function TreeNodeItem({
       onClick={() => onSelectFile(fileNode.id)}
       onContextMenu={(e) => onOpenContextMenu(e, 'file', fileNode.id, fileNode.name, fileNode.path)}
       style={{ paddingLeft: `${fileNode.depth * 14 + 24}px` }}
-      className={`group flex items-center justify-between py-1 pr-2 cursor-pointer transition-colors text-xs select-none ${
+      className={`group flex items-center justify-between py-1 min-h-[28px] pr-2 cursor-pointer transition-colors text-xs select-none ${
         isActive
           ? 'bg-[#37373d] text-white font-medium border-l-2 border-[#007acc]'
           : 'hover:bg-[#2a2d2e] text-[#cccccc] hover:text-white border-l-2 border-transparent'
@@ -381,7 +381,7 @@ function TreeNodeItem({
       </div>
 
       {!isRenaming && (
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
           <button
             type="button"
             onClick={(e) => {
@@ -432,7 +432,6 @@ function TreeNodeItem({
 }
 
 export function FileExplorer({
-  projects,
   activeProject,
   files,
   folders,
@@ -445,8 +444,6 @@ export function FileExplorer({
   onToggleFullscreen,
   onSelectFile,
   onSelectProject,
-  onCreateProject,
-  onDeleteProject,
   onCreateFile,
   onRenameFile,
   onDeleteFile,
@@ -710,16 +707,6 @@ export function FileExplorer({
     }
   };
 
-  // Project Creation Submit
-  const handleCreateProjectSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newProjectName.trim()) {
-      onCreateProject(newProjectName.trim(), newProjectTemplate);
-      setNewProjectName('');
-      setIsCreatingProject(false);
-    }
-  };
-
   // Export / Import
   const handleExportJson = () => {
     if (activeProject) ExportImportService.downloadProjectJson(activeProject.id);
@@ -737,11 +724,11 @@ export function FileExplorer({
       if (file.name.endsWith('.json')) {
         const text = await file.text();
         const res = await ExportImportService.importProjectFromJson(text);
-        onSelectProject(res.project.id);
+        onSelectProject?.(res.project.id);
         showToast(`Imported project "${res.project.name}"`);
       } else if (file.name.endsWith('.zip')) {
         const res = await ExportImportService.importProjectFromZip(file);
-        onSelectProject(res.project.id);
+        onSelectProject?.(res.project.id);
         showToast(`Imported project "${res.project.name}"`);
       }
     } catch (err: unknown) {
@@ -771,11 +758,11 @@ export function FileExplorer({
 
       {/* Explorer Top Toolbar & Project Switcher */}
       <div className="p-2 border-b border-[#3c3c3c] flex flex-col gap-2 shrink-0">
-        <div className="flex items-center justify-between">
-          <span className="font-bold tracking-wider text-[11px] text-[#858585] uppercase">Explorer</span>
+        <div className="flex items-center justify-between gap-1 flex-wrap">
+          <span className="font-bold tracking-wider text-[11px] text-[#858585] uppercase shrink-0">Explorer</span>
 
           {/* Action Toolbar */}
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5 flex-wrap justify-end">
             <button
               type="button"
               onClick={() => handleStartInlineCreation('file', effectiveRootId, 0)}
@@ -854,99 +841,42 @@ export function FileExplorer({
           </div>
         </div>
 
-        {/* Project Selector Dropdown */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded bg-[#1e1e1e] hover:bg-[#2a2d2e] border border-[#3c3c3c] text-left transition-colors"
-          >
-            <div className="flex items-center gap-1.5 overflow-hidden">
-              <Folder className="w-3.5 h-3.5 text-[#007acc] shrink-0" />
-              <span className="truncate font-medium text-white">{activeProject?.name || 'Select Project'}</span>
-            </div>
-            <ChevronDown className="w-3 h-3 text-[#858585] shrink-0" />
-          </button>
-
-          {/* Active Workspace Root Scoped Banner */}
-          {activeWorkspaceRootId && (
-            <div className="mt-1.5 flex items-center justify-between px-2 py-1 rounded bg-[#04395e]/80 border border-[#007acc]/50 text-xs">
-              <div className="flex items-center gap-1.5 overflow-hidden">
-                <FolderOpen className="w-3.5 h-3.5 text-[#38bdf8] shrink-0" />
-                <div className="flex items-center gap-1 truncate">
-                  <span className="font-semibold text-white truncate">
-                    {activeWorkspaceName || 'Workspace'}
-                  </span>
-                  <span className="text-[9px] px-1 py-0.2 rounded bg-[#007acc] text-white font-mono uppercase font-bold tracking-wider shrink-0">
-                    ROOT
-                  </span>
-                </div>
-              </div>
-              {onOpenFolderAsWorkspace && (
-                <button
-                  type="button"
-                  onClick={() => onOpenFolderAsWorkspace(null)}
-                  className="p-0.5 rounded hover:bg-white/10 text-[#cccccc] hover:text-white transition-colors"
-                  title="Clear Workspace Root (Open Entire Project)"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+        {/* Active Open Workspace Folder Section Header */}
+        <div className="flex items-center justify-between px-2.5 py-1.5 rounded bg-[#1e1e1e] border border-[#3c3c3c] text-xs min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-1">
+            <FolderOpen className="w-3.5 h-3.5 text-[#38bdf8] shrink-0" />
+            <div className="flex items-center gap-1 min-w-0 truncate">
+              <span className="font-bold text-white uppercase text-[11px] tracking-wider truncate">
+                {activeWorkspaceName || (activeWorkspaceRootId ? 'Workspace' : 'Home')}
+              </span>
+              {activeWorkspaceRootId && (
+                <span className="text-[9px] px-1 py-0.2 rounded bg-[#007acc] text-white font-mono uppercase font-bold tracking-wider shrink-0">
+                  ROOT
+                </span>
               )}
             </div>
-          )}
-
-          {isProjectDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-[#1e1e1e] border border-[#3c3c3c] rounded shadow-2xl z-50 max-h-64 overflow-y-auto">
-              <div className="p-1">
-                <div className="flex items-center justify-between px-2 py-1 text-[10px] text-[#858585] uppercase font-semibold">
-                  <span>Projects</span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsCreatingProject(true);
-                      setIsProjectDropdownOpen(false);
-                    }}
-                    className="hover:text-white flex items-center gap-1"
-                  >
-                    <FolderPlus className="w-3 h-3" />
-                    <span>New</span>
-                  </button>
-                </div>
-
-                {projects.map((p) => (
-                  <div
-                    key={p.id}
-                    onClick={() => {
-                      onSelectProject(p.id);
-                      setIsProjectDropdownOpen(false);
-                    }}
-                    className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer ${
-                      p.id === activeProject?.id ? 'bg-[#04395e] text-white font-medium' : 'hover:bg-[#2a2d2e] text-[#cccccc]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 truncate">
-                      <Layers className="w-3.5 h-3.5 text-[#007acc] shrink-0" />
-                      <span className="truncate">{p.name}</span>
-                    </div>
-                    {projects.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteConfirmProject(p);
-                        }}
-                        className="p-1 hover:text-red-400 opacity-60 hover:opacity-100"
-                        title="Delete Project"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          </div>
+          <div className="flex items-center gap-1">
+            {activeWorkspaceRootId ? (
+              <button
+                type="button"
+                onClick={() => onOpenFolderAsWorkspace?.(null)}
+                className="p-0.5 rounded hover:bg-[#333333] text-[#858585] hover:text-white transition-colors"
+                title="Close Folder (Show All Folders)"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            ) : onOpenFolderDialog ? (
+              <button
+                type="button"
+                onClick={onOpenFolderDialog}
+                className="p-0.5 rounded hover:bg-[#333333] text-[#858585] hover:text-[#38bdf8] transition-colors"
+                title="Open Folder..."
+              >
+                <FolderInput className="w-3.5 h-3.5" />
+              </button>
+            ) : null}
+          </div>
         </div>
 
         {/* Quick Filter Input */}
@@ -954,7 +884,7 @@ export function FileExplorer({
           <Search className="w-3 h-3 absolute left-2 text-[#6e6e6e]" />
           <input
             type="text"
-            placeholder="Search files in project..."
+            placeholder="Search files..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-6 pr-2 py-1 bg-[#1e1e1e] border border-[#3c3c3c] focus:border-[#007acc] rounded text-white text-xs outline-none transition-colors"
@@ -970,79 +900,6 @@ export function FileExplorer({
           )}
         </div>
       </div>
-
-      {/* New Project Inline Modal */}
-      {isCreatingProject && (
-        <form onSubmit={handleCreateProjectSubmit} className="p-2.5 border-b border-[#3c3c3c] bg-[#1e1e1e] flex flex-col gap-2">
-          <div className="font-semibold text-white">Create New Project</div>
-          <input
-            type="text"
-            placeholder="Project name..."
-            value={newProjectName}
-            onChange={(e) => setNewProjectName(e.target.value)}
-            className="w-full px-2 py-1 bg-[#252526] border border-[#3c3c3c] focus:border-[#007acc] rounded text-white outline-none"
-            autoFocus
-          />
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-[#858585]">Template:</span>
-            <select
-              value={newProjectTemplate}
-              onChange={(e) => setNewProjectTemplate(e.target.value as ProjectTemplate)}
-              className="w-full px-2 py-1 bg-[#252526] border border-[#3c3c3c] focus:border-[#007acc] rounded text-white text-xs outline-none"
-            >
-              <option value="web">Web (HTML + CSS + JS)</option>
-              <option value="typescript">TypeScript</option>
-              <option value="python">Python 3 (Pyodide)</option>
-              <option value="cpp">C++ (WebAssembly)</option>
-              <option value="empty">Empty Project</option>
-            </select>
-          </div>
-          <div className="flex justify-end gap-1.5 mt-1">
-            <button
-              type="button"
-              onClick={() => setIsCreatingProject(false)}
-              className="px-2 py-1 rounded bg-[#333333] hover:bg-[#3c3c3c] text-white"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-2.5 py-1 rounded bg-[#007acc] hover:bg-[#1177bb] text-white font-medium"
-            >
-              Create
-            </button>
-          </div>
-        </form>
-      )}
-
-      {/* Delete Project Confirmation Dialog */}
-      {deleteConfirmProject && (
-        <div className="p-2.5 bg-red-950/40 border-b border-red-800 flex flex-col gap-2">
-          <span className="font-semibold text-red-200">Delete Project?</span>
-          <p className="text-[11px] text-red-300">
-            Are you sure you want to delete &quot;{deleteConfirmProject.name}&quot;? All files and folders will be permanently removed.
-          </p>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setDeleteConfirmProject(null)}
-              className="px-2 py-1 rounded bg-[#333333] hover:bg-[#444444] text-white"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onDeleteProject(deleteConfirmProject.id);
-                setDeleteConfirmProject(null);
-              }}
-              className="px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white font-semibold"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Delete Non-Empty Folder Confirmation Dialog */}
       {deleteConfirmFolder && (
@@ -1173,6 +1030,7 @@ export function FileExplorer({
               filesCount={files.length}
               onSelectFile={onSelectFile}
               onToggleFolderExpanded={onToggleFolderExpanded}
+              onOpenFolderAsWorkspace={onOpenFolderAsWorkspace}
               onStartInlineCreation={handleStartInlineCreation}
               onCancelInlineCreation={() => setInlineCreation(null)}
               onChangeInlineName={(val) => {
@@ -1368,7 +1226,7 @@ export function FileExplorer({
                   className="w-full text-left px-3 py-1.5 hover:bg-[#04395e] hover:text-white flex items-center gap-2 text-[#38bdf8]"
                 >
                   <FolderOpen className="w-3.5 h-3.5" />
-                  <span>Open as Workspace Root</span>
+                  <span>Open Folder in Editor</span>
                 </button>
               )}
               <div className="h-px bg-[#333333] my-1" />
