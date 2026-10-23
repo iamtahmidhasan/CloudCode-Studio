@@ -26,14 +26,9 @@ export function ActivityBar({
   onRunCode,
 }: ActivityBarProps) {
   const { isInstallable, promptInstall } = usePwa();
+
   return (
-    <div 
-      className="w-12 h-full bg-[#333333] border-r border-[#252526] flex flex-col justify-between items-center py-2 select-none shrink-0 z-10"
-      style={{
-        paddingTop: 'calc(0.5rem + env(safe-area-inset-top, 0px))',
-        paddingLeft: 'env(safe-area-inset-left, 0px)',
-      }}
-    >
+    <div className="w-12 h-full bg-[#333333] border-r border-[#252526] flex flex-col justify-between items-center py-2 select-none shrink-0 z-10">
       {/* Top Icons */}
       <div className="flex flex-col items-center gap-1 w-full">
         {/* Explorer Toggle */}

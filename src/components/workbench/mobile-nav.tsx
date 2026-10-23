@@ -12,13 +12,7 @@ interface MobileNavProps {
 
 export function MobileNav({ activeTab, onSelectTab, outputCount = 0 }: MobileNavProps) {
   return (
-    <nav
-      className="bg-[#252526] border-t border-[#3c3c3c] flex items-center justify-around select-none shrink-0 z-20"
-      style={{
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        height: 'calc(56px + env(safe-area-inset-bottom, 0px))',
-      }}
-    >
+    <nav className="h-14 bg-[#252526] border-t border-[#3c3c3c] flex items-center justify-around select-none shrink-0 z-20 pb-safe">
       {/* Code Editor Tab */}
       <button
         type="button"

@@ -28,19 +28,19 @@ interface GridCell {
 const CHARS =
   '⣧⣩⣪⣫⣬⣭⣮⣯⣱⣲⣳⣴⣵⣶⣷⣹⣺⣻⣼⣽⣾⣿⣧⣩⣪⣫⣬⣭⣮⣯⣱⣲⣳⣴⣵⣶⣷⣹⣺⣻⣼⣽⣾⣿⣧⣩⣪⣫⣬⣭⣮⣯⣱⣲⣳⣴⣵⣶⣷⣹⣺⣻⣼⣽⣾⣿⣧⣩⣪⣫⣬⣭⣮⣯⣱⣲⣳⣴⣵⣶⣷⣹⣺⣻⣼⣽⣾⣿⣧⣩⣪⣫⣬⣭⣮⣯⣱⣲⣳⣴⣵⣶⣷⣹⣺⣻⣼⣽⣾⣿⣧⣩⣪⣫⣬⣭⣮⣯⣱⣲⣳⣴⣵⣶⣷⣹⣺⣻⣼⣽⣾⣿⠁⠂⠄⠈⠐⠠⡀⢀⠃⠅⠘⠨⠊⠋⠌⠍⠎⠏⠑⠒⠓⠔⠕⠖⠗⠙⠚⠛⠜⠝⠞⠟⠡⠢⠣⠤⠥⠦⠧⠩⠪⠫⠬⠭⠮⠯⠱⠲⠳⠴⠵⠶⠷⠹⠺⠻⠼⠽⠾⠿⡁⡂⡃⡄⡅⡆⡇⡉⡊⡋⡌⡍⡎⡏⡑⡒⡓⡔⡕⡖⡗⡙⡚⡛⡜⡝⡞⡟⡡⡢⡣⡤⡥⡦⡧⡩⡪⡫⡬⡭⡮⡯⡱⡲⡳⡴⡵⡶⡷⡹⡺⡻⡼⡽⡾⡿⢁⢂⢃⢄⢅⢆⢇⢉⢊⢋⢌⢍⢎⢏⢑⢒⢓⢔⢕⢖⢗⢙⢚⢛⢜⢝⢞⢟⢡⢢⢣⢤⢥⢦⢧⢩⢪⢫⢬⢭⢮⢯⢱⢲⢳⢴⢵⢶⢷⢹⢺⢻⢼⢽⢾⢿⣀⣁⣂⣃⣄⣅⣆⣇⣉⣊⣋⣌⣍⣎⣏⣑⣒⣓⣔⣕⣖⣗⣙⣚⣛⣜⣝⣞⣟⣡⣢⣣⣤⣥⣦⣧⣩⣪⣫⣬⣭⣮⣯⣱⣲⣳⣴⣵⣶⣷⣹⣺⣻⣼⣽⣾⣿';
 
-// Adaptively scale grid density based on screen width to prevent overcrowding on small screens
+// Scale grid density smoothly with high quantity of points
 function getEffectiveGridSize(width: number, baseGridSize: number): number {
   if (width === 0) return baseGridSize;
-  if (width < 420) return Math.min(26, baseGridSize);
-  if (width < 640) return Math.min(34, baseGridSize);
-  if (width < 1024) return Math.min(52, baseGridSize);
+  if (width < 420) return Math.min(48, baseGridSize);
+  if (width < 640) return Math.min(60, baseGridSize);
+  if (width < 1024) return Math.min(75, baseGridSize);
   return baseGridSize;
 }
 
 export const DelicateAsciiDots = ({
   backgroundColor = '#000000',
-  textColor = '85, 85, 85',
-  gridSize = 75,
+  textColor = '90, 90, 90',
+  gridSize = 85,
   removeWaveLine = true,
   animationSpeed = 0.75,
   className,
@@ -137,12 +137,12 @@ export const DelicateAsciiDots = ({
     const initialGrid = getEffectiveGridSize(currentWidth, gridSize);
 
     const waves: Wave[] = [];
-    const numWaves = 4;
+    const numWaves = 6;
 
     for (let i = 0; i < numWaves; i++) {
       waves.push({
-        x: initialGrid * (0.25 + Math.random() * 0.5),
-        y: initialGrid * (0.25 + Math.random() * 0.5),
+        x: initialGrid * (0.2 + Math.random() * 0.6),
+        y: initialGrid * (0.2 + Math.random() * 0.6),
         frequency: 0.2 + Math.random() * 0.3,
         amplitude: 0.5 + Math.random() * 0.5,
         phase: Math.random() * Math.PI * 2,
@@ -235,9 +235,9 @@ export const DelicateAsciiDots = ({
         speed: 1,
       };
 
-      // On small screens, raise the threshold so fewer, sparser characters appear with breathing space
+      // Lower threshold allows richer, more continuous ASCII dot presence across screen
       const isSmallScreen = width < 640;
-      const presenceThreshold = isSmallScreen ? 0.44 : 0.3;
+      const presenceThreshold = isSmallScreen ? 0.2 : 0.16;
 
       for (let y = 0; y < effectiveGrid; y++) {
         for (let x = 0; x < effectiveGrid; x++) {
@@ -277,8 +277,8 @@ export const DelicateAsciiDots = ({
               Math.max(0, Math.floor(normalizedWave * (CHARS.length - 1)))
             );
             const opacity = Math.min(
-              0.85,
-              Math.max(0.2, 0.2 + normalizedWave * 0.5)
+              0.9,
+              Math.max(0.25, 0.25 + normalizedWave * 0.55)
             );
 
             newGrid[y][x] = {
@@ -289,7 +289,7 @@ export const DelicateAsciiDots = ({
         }
       }
 
-      const fontSize = Math.min(cellWidth, cellHeight) * (isSmallScreen ? 0.72 : 0.8);
+      const fontSize = Math.min(cellWidth, cellHeight) * 0.82;
       ctx.font = `${fontSize}px monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';

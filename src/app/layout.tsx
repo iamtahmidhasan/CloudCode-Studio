@@ -30,7 +30,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#1e1e1e",
+  themeColor: "#007acc",
 };
 
 export default function RootLayout({
@@ -47,7 +47,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Code" />
       </head>
-      <body className="h-full w-full overflow-hidden flex flex-col bg-[#1e1e1e] text-[#cccccc]" suppressHydrationWarning>
+      <body className="h-full w-full overflow-hidden env-space flex flex-col bg-[#1e1e1e] text-[#cccccc]" suppressHydrationWarning>
         <PwaProvider>
           <TooltipProvider delay={300}>
             {children}

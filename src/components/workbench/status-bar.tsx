@@ -47,13 +47,7 @@ export function StatusBar({
   };
 
   return (
-    <footer 
-      className="bg-[#007acc] text-white flex items-center justify-between px-2 text-[11px] font-sans select-none shrink-0 z-10 overflow-hidden"
-      style={{
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        height: 'calc(24px + env(safe-area-inset-bottom, 0px))',
-      }}
-    >
+    <footer className="h-6 bg-[#007acc] text-white flex items-center justify-between px-2 text-[11px] font-sans select-none shrink-0 z-10 overflow-hidden">
       {/* Left items */}
       <div className="flex items-center gap-3">
         {/* Project Name */}

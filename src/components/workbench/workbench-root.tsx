@@ -389,17 +389,11 @@ export function WorkbenchRoot() {
 
   return (
     <div
-      className={`flex flex-col h-full w-full overflow-hidden bg-[#1e1e1e] text-[#cccccc] ${containerThemeClass}`}
+      className={`flex flex-col h-full h-svh h-dvh w-full overflow-hidden bg-[#1e1e1e] text-[#cccccc] ${containerThemeClass}`}
     >
       {/* Mobile Top Header (Mobile only) */}
       {isMobile && (
-        <header
-          className="bg-[#252526] border-b border-[#3c3c3c] flex items-center justify-between px-3 select-none shrink-0 z-20"
-          style={{
-            paddingTop: 'env(safe-area-inset-top, 0px)',
-            height: 'calc(44px + env(safe-area-inset-top, 0px))',
-          }}
-        >
+        <header className="h-11 bg-[#252526] border-b border-[#3c3c3c] flex items-center justify-between px-3 select-none shrink-0 z-20">
           <div className="flex items-center gap-1.5 overflow-hidden">
             <Folder className="w-4 h-4 text-[#007acc] shrink-0" />
             <span className="font-bold text-xs text-white truncate max-w-[160px]">
