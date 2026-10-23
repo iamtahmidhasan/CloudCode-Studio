@@ -12,12 +12,12 @@ interface MobileNavProps {
 
 export function MobileNav({ activeTab, onSelectTab, outputCount = 0 }: MobileNavProps) {
   return (
-    <nav className="bg-[#252526] border-t border-[#3c3c3c] flex items-center justify-around select-none shrink-0 z-20 pb-[env(safe-area-inset-bottom,0px)] h-[calc(3.5rem+env(safe-area-inset-bottom,0px))]">
+    <nav className="bg-[#252526] border-t border-[#3c3c3c] flex items-center justify-around select-none shrink-0 z-20 pb-[min(env(safe-area-inset-bottom,0px),0.75rem)] h-[calc(3.5rem+min(env(safe-area-inset-bottom,0px),0.75rem))]">
       {/* Code Editor Tab */}
       <button
         type="button"
         onClick={() => onSelectTab('code')}
-        className={`flex flex-col items-center justify-center flex-1 h-full py-1 min-h-[48px] transition-colors ${
+        className={`flex flex-col items-center justify-center flex-1 h-full py-0.5 transition-colors ${
           activeTab === 'code' ? 'text-[#007acc] font-semibold' : 'text-[#858585] hover:text-[#cccccc]'
         }`}
       >
@@ -29,7 +29,7 @@ export function MobileNav({ activeTab, onSelectTab, outputCount = 0 }: MobileNav
       <button
         type="button"
         onClick={() => onSelectTab('files')}
-        className={`flex flex-col items-center justify-center flex-1 h-full py-1 min-h-[48px] transition-colors ${
+        className={`flex flex-col items-center justify-center flex-1 h-full py-0.5 transition-colors ${
           activeTab === 'files' ? 'text-[#007acc] font-semibold' : 'text-[#858585] hover:text-[#cccccc]'
         }`}
       >
@@ -41,7 +41,7 @@ export function MobileNav({ activeTab, onSelectTab, outputCount = 0 }: MobileNav
       <button
         type="button"
         onClick={() => onSelectTab('preview')}
-        className={`flex flex-col items-center justify-center flex-1 h-full py-1 min-h-[48px] transition-colors ${
+        className={`flex flex-col items-center justify-center flex-1 h-full py-0.5 transition-colors ${
           activeTab === 'preview' ? 'text-[#007acc] font-semibold' : 'text-[#858585] hover:text-[#cccccc]'
         }`}
       >
@@ -53,7 +53,7 @@ export function MobileNav({ activeTab, onSelectTab, outputCount = 0 }: MobileNav
       <button
         type="button"
         onClick={() => onSelectTab('output')}
-        className={`flex flex-col items-center justify-center flex-1 h-full py-1 min-h-[48px] relative transition-colors ${
+        className={`flex flex-col items-center justify-center flex-1 h-full py-0.5 relative transition-colors ${
           activeTab === 'output' ? 'text-[#007acc] font-semibold' : 'text-[#858585] hover:text-[#cccccc]'
         }`}
       >

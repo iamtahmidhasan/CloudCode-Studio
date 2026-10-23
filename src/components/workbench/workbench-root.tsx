@@ -389,7 +389,7 @@ export function WorkbenchRoot() {
 
   return (
     <div
-      className={`flex flex-col h-full h-svh h-dvh w-full overflow-hidden bg-[#1e1e1e] text-[#cccccc] ${containerThemeClass}`}
+      className={`flex flex-col h-full w-full overflow-hidden bg-[#1e1e1e] text-[#cccccc] ${containerThemeClass}`}
     >
       {/* Mobile Top Header (Mobile only) */}
       {isMobile && (
@@ -445,7 +445,7 @@ export function WorkbenchRoot() {
       )}
 
       {/* Main Workspace Body */}
-      <div className="flex flex-1 w-full overflow-hidden relative">
+      <div className="flex flex-1 w-full min-h-0 overflow-hidden relative">
         {/* Desktop / Tablet: Activity Bar */}
         {!isMobile && (
           <ActivityBar
@@ -495,10 +495,10 @@ export function WorkbenchRoot() {
         )}
 
         {/* Central Workspace Area: Mobile Panel OR Desktop Flexible Layout */}
-        <div className="flex flex-col flex-1 h-full min-w-0 overflow-hidden">
+        <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
           {/* MOBILE CONTENT VIEWPORT */}
           {isMobile ? (
-            <div className="flex-1 w-full h-full flex flex-col overflow-hidden">
+            <div className="flex-1 w-full min-h-0 flex flex-col overflow-hidden">
               {workspace.activePanel === 'code' && (
                 <>
                   <EditorTabs
@@ -520,7 +520,7 @@ export function WorkbenchRoot() {
                     isRunning={executionStatus === 'running'}
                     onOpenExplorer={handleOpenWindowsExplorer}
                   />
-                  <div className="flex-1 w-full h-full relative overflow-hidden">
+                  <div className="flex-1 w-full min-h-0 relative overflow-hidden">
                     <MonacoEditorPane
                       file={activeFile}
                       settings={settings}
@@ -555,7 +555,7 @@ export function WorkbenchRoot() {
               )}
 
               {workspace.activePanel === 'files' && (
-                <div className="flex-1 w-full h-full">
+                <div className="flex-1 w-full min-h-0 flex flex-col overflow-hidden">
                   <FileExplorer
                     projects={projects}
                     activeProject={activeProject}
@@ -591,13 +591,13 @@ export function WorkbenchRoot() {
               )}
 
               {workspace.activePanel === 'preview' && (
-                <div className="flex-1 w-full h-full">
+                <div className="flex-1 w-full min-h-0 overflow-hidden">
                   <WebPreviewPane previewDoc={previewDoc} onRefresh={handleRun} />
                 </div>
               )}
 
               {workspace.activePanel === 'output' && (
-                <div className="flex-1 w-full h-full">
+                <div className="flex-1 w-full min-h-0 overflow-hidden">
                   <OutputPanel
                     messages={consoleMessages}
                     onClear={clearConsole}

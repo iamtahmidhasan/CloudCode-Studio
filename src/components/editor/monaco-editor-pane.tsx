@@ -156,13 +156,26 @@ export function MonacoEditorPane({
     editorInstance.layout();
   };
 
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // Keep editor layout responsive on container size changes
   useEffect(() => {
     const handleResize = () => {
       localEditorRef.current?.layout();
     };
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    const ro = new ResizeObserver(() => {
+      localEditorRef.current?.layout();
+    });
+    if (containerRef.current) {
+      ro.observe(containerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      ro.disconnect();
+    };
   }, []);
 
   if (!file) {
@@ -192,7 +205,7 @@ export function MonacoEditorPane({
       : 'plaintext';
 
   return (
-    <div className="relative flex-1 w-full h-full overflow-hidden bg-[#1e1e1e]">
+    <div ref={containerRef} className="relative flex-1 w-full h-full min-h-0 overflow-hidden bg-[#1e1e1e]">
       <Editor
         height="100%"
         width="100%"
@@ -222,6 +235,7 @@ export function MonacoEditorPane({
           renderLineHighlight: 'all',
           automaticLayout: true,
           scrollBeyondLastLine: false,
+          scrollBeyondLastColumn: 0,
           smoothScrolling: true,
           cursorBlinking: 'smooth',
           cursorSmoothCaretAnimation: 'on',
@@ -241,7 +255,7 @@ export function MonacoEditorPane({
             comments: false,
             strings: true,
           },
-          padding: { top: 8, bottom: 8 },
+          padding: { top: 4, bottom: 4 },
         }}
       />
     </div>
