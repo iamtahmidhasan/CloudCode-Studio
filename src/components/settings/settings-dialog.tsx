@@ -30,7 +30,7 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const [confirmClearData, setConfirmClearData] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
-  const { isInstallable, isInstalled, promptInstall } = usePwa();
+  const { isInstallable, isInstalled, promptInstall, resetInstalledState } = usePwa();
 
   const handleResetData = async () => {
     setIsResetting(true);
@@ -251,6 +251,19 @@ export function SettingsDialog({
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Install</span>
+                </button>
+              )}
+              {isInstalled && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetInstalledState();
+                    onClose();
+                  }}
+                  className="px-2 py-1 rounded bg-[#333333] hover:bg-[#444444] text-[#cccccc] hover:text-white text-[11px] font-medium shrink-0 transition-colors"
+                  title="Reset PWA installed state to test the home install gate page"
+                >
+                  Test Install Gate
                 </button>
               )}
             </div>

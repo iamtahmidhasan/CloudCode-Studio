@@ -127,3 +127,21 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 100, 100, 0.7);
 }
+.top-env-space{
+  padding-top: env(safe-area-inset-top);
+}
+.bottom-env-space{
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.left-env-space{
+  padding-left: env(safe-area-inset-left);
+}
+.right-env-space{
+  padding-right: env(safe-area-inset-right);
+}
+.env-space{
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}

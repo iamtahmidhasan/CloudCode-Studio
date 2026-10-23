@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -10,23 +10,39 @@ interface BeforeInstallPromptEvent extends Event {
 interface PwaContextType {
   isInstallable: boolean;
   isInstalled: boolean;
+  isMounted: boolean;
   promptInstall: () => Promise<boolean>;
+  setAsInstalled: () => void;
+  resetInstalledState: () => void;
 }
+
+const emptySubscribe = () => () => {};
 
 const PwaContext = createContext<PwaContextType>({
   isInstallable: false,
   isInstalled: false,
+  isMounted: false,
   promptInstall: async () => false,
+  setAsInstalled: () => {},
+  resetInstalledState: () => {},
 });
 
 export function PwaProvider({ children }: { children: React.ReactNode }) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  const isMounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+
   const [isInstalled, setIsInstalled] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return (
+    const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as unknown as { standalone?: boolean }).standalone === true
-    );
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+    const hasInstalledFlag = localStorage.getItem('code_pwa_installed') === 'true';
+    return isStandalone || hasInstalledFlag;
   });
 
   useEffect(() => {
@@ -42,16 +58,19 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
         });
     }
 
-    // 3. Listen for browser install prompt trigger
+    // 2. Listen for browser install prompt trigger
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 
-    // 4. Listen for successful app installation
+    // 3. Listen for successful app installation
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('code_pwa_installed', 'true');
+      }
       console.log('[PWA] Code was successfully installed!');
     };
 
@@ -64,6 +83,24 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const setAsInstalled = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('code_pwa_installed', 'true');
+    }
+    setIsInstalled(true);
+  }, []);
+
+  const resetInstalledState = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('code_pwa_installed');
+    }
+    const isStandalone =
+      typeof window !== 'undefined' &&
+      (window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as unknown as { standalone?: boolean }).standalone === true);
+    setIsInstalled(isStandalone);
+  }, []);
+
   const promptInstall = useCallback(async (): Promise<boolean> => {
     if (!deferredPrompt) {
       return false;
@@ -73,6 +110,9 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
       await deferredPrompt.prompt();
       const choiceResult = await deferredPrompt.userChoice;
       if (choiceResult.outcome === 'accepted') {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('code_pwa_installed', 'true');
+        }
         setIsInstalled(true);
         setDeferredPrompt(null);
         return true;
@@ -89,7 +129,10 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
       value={{
         isInstallable: !!deferredPrompt && !isInstalled,
         isInstalled,
+        isMounted,
         promptInstall,
+        setAsInstalled,
+        resetInstalledState,
       }}
     >
       {children}
@@ -100,3 +143,4 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
 export function usePwa() {
   return useContext(PwaContext);
 }
+
