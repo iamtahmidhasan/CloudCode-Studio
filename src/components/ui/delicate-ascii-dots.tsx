@@ -28,10 +28,19 @@ interface GridCell {
 const CHARS =
   '⣧⣩⣪⣫⣬⣭⣮⣯⣱⣲⣳⣴⣵⣶⣷⣹⣺⣻⣼⣽⣾⣿⣧⣩⣪⣫⣬⣭⣮⣯⣱⣲⣳⣴⣵⣶⣷⣹⣺⣻⣼⣽⣾⣿⣧⣩⣪⣫⣬⣭⣮⣯⣱⣲⣳⣴⣵⣶⣷⣹⣺⣻⣼⣽⣾⣿⣧⣩⣪⣫⣬⣭⣮⣯⣱⣲⣳⣴⣵⣶⣷⣹⣺⣻⣼⣽⣾⣿⣧⣩⣪⣫⣬⣭⣮⣯⣱⣲⣳⣴⣵⣶⣷⣹⣺⣻⣼⣽⣾⣿⣧⣩⣪⣫⣬⣭⣮⣯⣱⣲⣳⣴⣵⣶⣷⣹⣺⣻⣼⣽⣾⣿⠁⠂⠄⠈⠐⠠⡀⢀⠃⠅⠘⠨⠊⠋⠌⠍⠎⠏⠑⠒⠓⠔⠕⠖⠗⠙⠚⠛⠜⠝⠞⠟⠡⠢⠣⠤⠥⠦⠧⠩⠪⠫⠬⠭⠮⠯⠱⠲⠳⠴⠵⠶⠷⠹⠺⠻⠼⠽⠾⠿⡁⡂⡃⡄⡅⡆⡇⡉⡊⡋⡌⡍⡎⡏⡑⡒⡓⡔⡕⡖⡗⡙⡚⡛⡜⡝⡞⡟⡡⡢⡣⡤⡥⡦⡧⡩⡪⡫⡬⡭⡮⡯⡱⡲⡳⡴⡵⡶⡷⡹⡺⡻⡼⡽⡾⡿⢁⢂⢃⢄⢅⢆⢇⢉⢊⢋⢌⢍⢎⢏⢑⢒⢓⢔⢕⢖⢗⢙⢚⢛⢜⢝⢞⢟⢡⢢⢣⢤⢥⢦⢧⢩⢪⢫⢬⢭⢮⢯⢱⢲⢳⢴⢵⢶⢷⢹⢺⢻⢼⢽⢾⢿⣀⣁⣂⣃⣄⣅⣆⣇⣉⣊⣋⣌⣍⣎⣏⣑⣒⣓⣔⣕⣖⣗⣙⣚⣛⣜⣝⣞⣟⣡⣢⣣⣤⣥⣦⣧⣩⣪⣫⣬⣭⣮⣯⣱⣲⣳⣴⣵⣶⣷⣹⣺⣻⣼⣽⣾⣿';
 
+// Adaptively scale grid density based on screen width to prevent overcrowding on small screens
+function getEffectiveGridSize(width: number, baseGridSize: number): number {
+  if (width === 0) return baseGridSize;
+  if (width < 420) return Math.min(26, baseGridSize);
+  if (width < 640) return Math.min(34, baseGridSize);
+  if (width < 1024) return Math.min(52, baseGridSize);
+  return baseGridSize;
+}
+
 export const DelicateAsciiDots = ({
   backgroundColor = '#000000',
   textColor = '85, 85, 85',
-  gridSize = 80,
+  gridSize = 75,
   removeWaveLine = true,
   animationSpeed = 0.75,
   className,
@@ -97,8 +106,9 @@ export const DelicateAsciiDots = ({
       const y = e.clientY - rect.top;
 
       const { width, height } = dimensionsRef.current;
-      const cellWidth = width / gridSize;
-      const cellHeight = height / gridSize;
+      const effectiveGrid = getEffectiveGridSize(width, gridSize);
+      const cellWidth = width / effectiveGrid;
+      const cellHeight = height / effectiveGrid;
 
       const gridX = x / cellWidth;
       const gridY = y / cellHeight;
@@ -123,13 +133,16 @@ export const DelicateAsciiDots = ({
   }, []);
 
   useEffect(() => {
+    const { width: currentWidth } = dimensionsRef.current;
+    const initialGrid = getEffectiveGridSize(currentWidth, gridSize);
+
     const waves: Wave[] = [];
     const numWaves = 4;
 
     for (let i = 0; i < numWaves; i++) {
       waves.push({
-        x: gridSize * (0.25 + Math.random() * 0.5),
-        y: gridSize * (0.25 + Math.random() * 0.5),
+        x: initialGrid * (0.25 + Math.random() * 0.5),
+        y: initialGrid * (0.25 + Math.random() * 0.5),
         frequency: 0.2 + Math.random() * 0.3,
         amplitude: 0.5 + Math.random() * 0.5,
         phase: Math.random() * Math.PI * 2,
@@ -154,7 +167,8 @@ export const DelicateAsciiDots = ({
     function getClickWaveInfluence(
       x: number,
       y: number,
-      currentTime: number
+      currentTime: number,
+      effectiveGrid: number
     ): number {
       let totalInfluence = 0;
 
@@ -165,8 +179,8 @@ export const DelicateAsciiDots = ({
           const dx = x - wave.x;
           const dy = y - wave.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          const waveRadius = (age / maxAge) * gridSize * 0.8;
-          const waveWidth = gridSize * 0.15;
+          const waveRadius = (age / maxAge) * effectiveGrid * 0.8;
+          const waveWidth = effectiveGrid * 0.15;
 
           if (Math.abs(distance - waveRadius) < waveWidth) {
             const waveStrength = (1 - age / maxAge) * wave.intensity;
@@ -196,16 +210,18 @@ export const DelicateAsciiDots = ({
       const { width, height } = dimensionsRef.current;
       if (width === 0 || height === 0) return;
 
+      const effectiveGrid = getEffectiveGridSize(width, gridSize);
+
       // Clear canvas
       ctx.fillStyle = backgroundColor;
       ctx.fillRect(0, 0, width, height);
 
-      const newGrid: (GridCell | null)[][] = Array(gridSize)
+      const newGrid: (GridCell | null)[][] = Array(effectiveGrid)
         .fill(0)
-        .map(() => Array(gridSize).fill(null));
+        .map(() => Array(effectiveGrid).fill(null));
 
-      const cellWidth = width / gridSize;
-      const cellHeight = height / gridSize;
+      const cellWidth = width / effectiveGrid;
+      const cellHeight = height / effectiveGrid;
 
       const mouseGridX = mouseRef.current.x / cellWidth;
       const mouseGridY = mouseRef.current.y / cellHeight;
@@ -219,8 +235,12 @@ export const DelicateAsciiDots = ({
         speed: 1,
       };
 
-      for (let y = 0; y < gridSize; y++) {
-        for (let x = 0; x < gridSize; x++) {
+      // On small screens, raise the threshold so fewer, sparser characters appear with breathing space
+      const isSmallScreen = width < 640;
+      const presenceThreshold = isSmallScreen ? 0.44 : 0.3;
+
+      for (let y = 0; y < effectiveGrid; y++) {
+        for (let x = 0; x < effectiveGrid; x++) {
           let totalWave = 0;
           const allWaves = waves.concat([mouseWave]);
 
@@ -239,26 +259,26 @@ export const DelicateAsciiDots = ({
             totalWave += value;
           });
 
-          const clickInfluence = getClickWaveInfluence(x, y, currentTime);
+          const clickInfluence = getClickWaveInfluence(x, y, currentTime, effectiveGrid);
           totalWave += clickInfluence;
 
           const mouseDistance = Math.sqrt(
             (x - mouseGridX) ** 2 + (y - mouseGridY) ** 2
           );
-          if (mouseDistance < gridSize * 0.3) {
-            const mouseEffect = (1 - mouseDistance / (gridSize * 0.3)) * 0.8;
+          if (mouseDistance < effectiveGrid * 0.3) {
+            const mouseEffect = (1 - mouseDistance / (effectiveGrid * 0.3)) * 0.8;
             totalWave += mouseEffect * Math.sin(timeRef.current * 3);
           }
 
           const normalizedWave = (totalWave + 2) / 4;
-          if (Math.abs(totalWave) > 0.2) {
+          if (Math.abs(totalWave) > presenceThreshold) {
             const charIndex = Math.min(
               CHARS.length - 1,
               Math.max(0, Math.floor(normalizedWave * (CHARS.length - 1)))
             );
             const opacity = Math.min(
-              0.9,
-              Math.max(0.4, 0.4 + normalizedWave * 0.5)
+              0.85,
+              Math.max(0.2, 0.2 + normalizedWave * 0.5)
             );
 
             newGrid[y][x] = {
@@ -269,13 +289,13 @@ export const DelicateAsciiDots = ({
         }
       }
 
-      const fontSize = Math.min(cellWidth, cellHeight) * 0.8;
+      const fontSize = Math.min(cellWidth, cellHeight) * (isSmallScreen ? 0.72 : 0.8);
       ctx.font = `${fontSize}px monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
-      for (let y = 0; y < gridSize; y++) {
-        for (let x = 0; x < gridSize; x++) {
+      for (let y = 0; y < effectiveGrid; y++) {
+        for (let x = 0; x < effectiveGrid; x++) {
           const cell = newGrid[y][x];
           if (cell && cell.char && CHARS.includes(cell.char)) {
             ctx.fillStyle = `rgba(${textColor}, ${cell.opacity})`;
@@ -295,7 +315,7 @@ export const DelicateAsciiDots = ({
           if (age < maxAge) {
             const progress = age / maxAge;
             const radius = progress * Math.min(width, height) * 0.5;
-            const alpha = (1 - progress) * 0.3 * wave.intensity;
+            const alpha = (1 - progress) * 0.25 * wave.intensity;
 
             ctx.beginPath();
             ctx.strokeStyle = `rgba(${textColor}, ${alpha})`;

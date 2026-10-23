@@ -50,21 +50,27 @@ export function PwaInstallLanding() {
       {/* Interactive ASCII Wave Canvas Background */}
       <DelicateAsciiDots
         backgroundColor="#000000"
-        textColor="85, 85, 85"
-        gridSize={85}
+        textColor="75, 75, 75"
+        gridSize={70}
         removeWaveLine={false}
-        animationSpeed={0.7}
+        animationSpeed={0.65}
         className="w-full h-full absolute inset-0 overflow-hidden pointer-events-auto"
       />
 
-      {/* Subtle vignette radial mask to keep typography laser-sharp */}
+      {/* Subtle vignette radial mask to keep typography and controls calm and clear on small screens */}
       <div 
-        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_25%,rgba(0,0,0,0.75)_80%,rgba(0,0,0,0.95)_100%)]" 
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_15%,rgba(0,0,0,0.8)_65%,rgba(0,0,0,0.98)_100%)] sm:bg-[radial-gradient(circle_at_center,transparent_25%,rgba(0,0,0,0.75)_80%,rgba(0,0,0,0.95)_100%)]" 
         aria-hidden="true"
       />
 
       {/* Top minimal status bar */}
-      <header className="absolute top-0 left-0 right-0 z-20 px-6 py-6 flex items-center justify-between pointer-events-none">
+      <header 
+        className="absolute top-0 left-0 right-0 z-20 px-6 flex items-center justify-between pointer-events-none"
+        style={{
+          paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))',
+          paddingBottom: '1.25rem',
+        }}
+      >
         <div className="flex items-center gap-2 pointer-events-auto">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-[10px] font-mono tracking-widest uppercase text-neutral-500">
@@ -142,7 +148,13 @@ export function PwaInstallLanding() {
       </div>
 
       {/* Minimal Footer */}
-      <footer className="absolute bottom-0 left-0 right-0 z-20 px-6 py-6 flex items-center justify-between text-[10px] font-mono text-neutral-600 pointer-events-none">
+      <footer 
+        className="absolute bottom-0 left-0 right-0 z-20 px-6 flex items-center justify-between text-[10px] font-mono text-neutral-600 pointer-events-none"
+        style={{
+          paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))',
+          paddingTop: '1.25rem',
+        }}
+      >
         <span>INTERACTIVE ASCII CANVAS</span>
         <span>CODE V1.0</span>
       </footer>

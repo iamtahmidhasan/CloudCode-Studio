@@ -1119,7 +1119,13 @@ export function WindowsExplorerView({
       )}
 
       {/* WINDOW TITLE BAR (Windows 11 Fluent style) */}
-      <div className="flex items-center justify-between h-10 px-3 bg-[#181818] border-b border-[#2d2d2d] shrink-0">
+      <div 
+        className="flex items-center justify-between px-3 bg-[#181818] border-b border-[#2d2d2d] shrink-0"
+        style={{
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          height: 'calc(40px + env(safe-area-inset-top, 0px))',
+        }}
+      >
         {/* Window Tabs / Title */}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 px-3 py-1 bg-[#252526] border-t-2 border-[#007acc] rounded-t text-xs font-medium text-white shadow-sm">
@@ -2006,7 +2012,13 @@ export function WindowsExplorerView({
       </div>
 
       {/* WINDOW STATUS BAR */}
-      <div className="flex items-center justify-between h-6 px-3 bg-[#181818] border-t border-[#2d2d2d] text-[11px] text-[#858585] shrink-0 select-none">
+      <div 
+        className="flex items-center justify-between px-3 bg-[#181818] border-t border-[#2d2d2d] text-[11px] text-[#858585] shrink-0 select-none"
+        style={{
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          height: 'calc(24px + env(safe-area-inset-bottom, 0px))',
+        }}
+      >
         <div>
           {isHome ? (
             <span>{homeFolders.length} {homeFolders.length === 1 ? 'folder' : 'folders'}, {recentFiles.length} files</span>
