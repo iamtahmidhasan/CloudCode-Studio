@@ -18,11 +18,14 @@ import { WebPreviewPane } from '../preview/web-preview-pane';
 import { OutputPanel } from '../output/output-panel';
 import { SettingsDialog } from '../settings/settings-dialog';
 import { PanelResizer, type ResizeEvent } from './panel-resizer';
+import { WindowsExplorerView, HOME_FOLDER_ID } from '../explorer/windows-explorer-view';
+import { OpenFolderDialog } from '../explorer/open-folder-dialog';
 
 import {
   Play,
   Settings,
   Folder,
+  FolderOpen,
   Minimize2,
   Maximize2,
   Terminal,
@@ -42,6 +45,11 @@ export function WorkbenchRoot() {
     isSaving,
     projects,
     files,
+    folders,
+    workspaceFiles,
+    activeWorkspaceRootId,
+    activeWorkspaceName,
+    rootFolder,
     openFiles,
     activeProject,
     activeFile,
@@ -50,10 +58,18 @@ export function WorkbenchRoot() {
     switchProject,
     createProject,
     deleteProject,
+    openFolderAsWorkspace,
     createFile,
     renameFile,
     deleteFile,
     duplicateFile,
+    createFolder,
+    renameFolder,
+    deleteFolder,
+    moveItem,
+    toggleFolderExpanded,
+    collapseAllFolders,
+    expandAllFolders,
     updateFileContent,
     saveNow,
     openFileInTab,
@@ -89,6 +105,14 @@ export function WorkbenchRoot() {
 
   const [cursorPos, setCursorPos] = useState<{ line: number; col: number }>({ line: 1, col: 1 });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isOpenFolderDialogOpen, setIsOpenFolderDialogOpen] = useState(false);
+  const [isExplorerFullscreen, setIsExplorerFullscreen] = useState(false);
+  const [fullscreenInitialFolderId, setFullscreenInitialFolderId] = useState<string | null>(HOME_FOLDER_ID);
+
+  const handleOpenWindowsExplorer = useCallback((folderId: string | null = HOME_FOLDER_ID) => {
+    setFullscreenInitialFolderId(folderId);
+    setIsExplorerFullscreen(true);
+  }, []);
 
   // Active drag override values (used during active dragging for 60fps lag-free responsiveness)
   const [dragBottomHeight, setDragBottomHeight] = useState<number | null>(null);
@@ -140,10 +164,10 @@ export function WorkbenchRoot() {
     monacoEditorRef.current?.trigger('source', 'redo', null);
   }, []);
 
-  // Execution trigger
+  // Execution trigger (scoped to active workspace root)
   const handleRun = useCallback(() => {
     if (activeFile) {
-      runCode(files, activeFile);
+      runCode(workspaceFiles, activeFile, rootFolder?.path || '');
       if (isMobile) {
         if (['html', 'css', 'javascript'].includes(activeFile.language)) {
           updateWorkspace({ activePanel: 'preview' });
@@ -157,7 +181,7 @@ export function WorkbenchRoot() {
         });
       }
     }
-  }, [activeFile, files, runCode, isMobile, updateWorkspace]);
+  }, [activeFile, workspaceFiles, rootFolder, runCode, isMobile, updateWorkspace]);
 
   // Resizing Handlers
   const handleResizeBottom = useCallback(
@@ -275,6 +299,14 @@ export function WorkbenchRoot() {
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={() => handleOpenWindowsExplorer()}
+              className="p-1 rounded text-[#858585] active:text-[#38bdf8] hover:text-[#38bdf8] transition-colors"
+              title="Full Screen Windows File Explorer"
+            >
+              <FolderOpen className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
               onClick={handleRun}
               className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#0e639c] active:bg-[#1177bb] text-white text-xs font-semibold shadow-sm"
             >
@@ -299,6 +331,7 @@ export function WorkbenchRoot() {
           <ActivityBar
             isSidebarOpen={workspace.isSidebarOpen}
             onToggleSidebar={() => updateWorkspace({ isSidebarOpen: !workspace.isSidebarOpen })}
+            onOpenWindowsExplorer={() => handleOpenWindowsExplorer()}
             activeBottomTab={workspace.bottomPanelTab}
             onSelectBottomTab={(tab) => updateWorkspace({ isBottomPanelOpen: true, bottomPanelTab: tab })}
             onOpenSettings={() => setIsSettingsOpen(true)}
@@ -308,20 +341,34 @@ export function WorkbenchRoot() {
 
         {/* Desktop / Tablet: Sidebar Explorer */}
         {!isMobile && workspace.isSidebarOpen && (
-          <div className="w-60 h-full shrink-0 z-10 transition-all duration-150">
+          <div className="w-64 h-full shrink-0 z-10 transition-all duration-150">
             <FileExplorer
               projects={projects}
               activeProject={activeProject}
               files={files}
+              folders={folders}
               activeFileId={workspace.activeFileId}
+              expandedFolderIds={workspace.expandedFolderIds || []}
+              activeWorkspaceRootId={activeWorkspaceRootId}
+              activeWorkspaceName={activeWorkspaceName}
+              onOpenFolderAsWorkspace={openFolderAsWorkspace}
+              onOpenFolderDialog={() => setIsOpenFolderDialogOpen(true)}
+              onToggleFullscreen={() => handleOpenWindowsExplorer()}
               onSelectFile={openFileInTab}
               onSelectProject={switchProject}
               onCreateProject={createProject}
               onDeleteProject={deleteProject}
-              onCreateFile={(name) => createFile(name)}
+              onCreateFile={(name, folderId) => createFile(name, folderId)}
               onRenameFile={renameFile}
               onDeleteFile={deleteFile}
               onDuplicateFile={duplicateFile}
+              onCreateFolder={createFolder}
+              onRenameFolder={renameFolder}
+              onDeleteFolder={deleteFolder}
+              onMoveItem={moveItem}
+              onToggleFolderExpanded={toggleFolderExpanded}
+              onCollapseAllFolders={collapseAllFolders}
+              onExpandAllFolders={expandAllFolders}
             />
           </div>
         )}
@@ -344,9 +391,13 @@ export function WorkbenchRoot() {
                     project={activeProject}
                     file={activeFile}
                     isSaving={isSaving}
+                    activeWorkspaceRootId={activeWorkspaceRootId}
+                    activeWorkspaceName={activeWorkspaceName}
+                    rootFolderPath={rootFolder?.path || ''}
                     onRun={handleRun}
                     onCancel={cancelExecution}
                     isRunning={executionStatus === 'running'}
+                    onOpenExplorer={handleOpenWindowsExplorer}
                   />
                   <div className="flex-1 w-full h-full relative overflow-hidden">
                     <MonacoEditorPane
@@ -380,7 +431,14 @@ export function WorkbenchRoot() {
                     projects={projects}
                     activeProject={activeProject}
                     files={files}
+                    folders={folders}
                     activeFileId={workspace.activeFileId}
+                    expandedFolderIds={workspace.expandedFolderIds || []}
+                    activeWorkspaceRootId={activeWorkspaceRootId}
+                    activeWorkspaceName={activeWorkspaceName}
+                    onOpenFolderAsWorkspace={openFolderAsWorkspace}
+                    onOpenFolderDialog={() => setIsOpenFolderDialogOpen(true)}
+                    onToggleFullscreen={() => handleOpenWindowsExplorer()}
                     onSelectFile={(fId) => {
                       openFileInTab(fId);
                       updateWorkspace({ activePanel: 'code' });
@@ -388,10 +446,17 @@ export function WorkbenchRoot() {
                     onSelectProject={switchProject}
                     onCreateProject={createProject}
                     onDeleteProject={deleteProject}
-                    onCreateFile={(name) => createFile(name)}
+                    onCreateFile={(name, folderId) => createFile(name, folderId)}
                     onRenameFile={renameFile}
                     onDeleteFile={deleteFile}
                     onDuplicateFile={duplicateFile}
+                    onCreateFolder={createFolder}
+                    onRenameFolder={renameFolder}
+                    onDeleteFolder={deleteFolder}
+                    onMoveItem={moveItem}
+                    onToggleFolderExpanded={toggleFolderExpanded}
+                    onCollapseAllFolders={collapseAllFolders}
+                    onExpandAllFolders={expandAllFolders}
                   />
                 </div>
               )}
@@ -438,9 +503,13 @@ export function WorkbenchRoot() {
                   project={activeProject}
                   file={activeFile}
                   isSaving={isSaving}
+                  activeWorkspaceRootId={activeWorkspaceRootId}
+                  activeWorkspaceName={activeWorkspaceName}
+                  rootFolderPath={rootFolder?.path || ''}
                   onRun={handleRun}
                   onCancel={cancelExecution}
                   isRunning={executionStatus === 'running'}
+                  onOpenExplorer={handleOpenWindowsExplorer}
                 />
 
                 {/* Editor View */}
@@ -715,6 +784,51 @@ export function WorkbenchRoot() {
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
         onUpdateSettings={updateSettings}
+      />
+
+      {/* Full-Screen Windows File Explorer View */}
+      {isExplorerFullscreen && (
+        <WindowsExplorerView
+          project={activeProject}
+          projects={projects}
+          files={files}
+          folders={folders}
+          activeFileId={workspace.activeFileId}
+          expandedFolderIds={workspace.expandedFolderIds || []}
+          activeWorkspaceRootId={activeWorkspaceRootId}
+          activeWorkspaceName={activeWorkspaceName}
+          onOpenFolderAsWorkspace={openFolderAsWorkspace}
+          initialFolderId={fullscreenInitialFolderId}
+          onClose={() => setIsExplorerFullscreen(false)}
+          onSelectFile={openFileInTab}
+          onOpenFileInEditor={(fileId) => {
+            openFileInTab(fileId);
+            setIsExplorerFullscreen(false);
+            if (isMobile) {
+              updateWorkspace({ activePanel: 'code' });
+            }
+          }}
+          onCreateFile={(name, folderId) => createFile(name, folderId)}
+          onRenameFile={renameFile}
+          onDeleteFile={deleteFile}
+          onDuplicateFile={duplicateFile}
+          onCreateFolder={createFolder}
+          onRenameFolder={renameFolder}
+          onDeleteFolder={deleteFolder}
+          onMoveItem={moveItem}
+          onToggleFolderExpanded={toggleFolderExpanded}
+        />
+      )}
+
+      {/* Open Folder as Workspace Root Dialog */}
+      <OpenFolderDialog
+        isOpen={isOpenFolderDialogOpen}
+        onClose={() => setIsOpenFolderDialogOpen(false)}
+        project={activeProject}
+        folders={folders}
+        files={files}
+        activeWorkspaceRootId={activeWorkspaceRootId}
+        onSelectWorkspaceRoot={(folderId) => openFolderAsWorkspace(folderId)}
       />
     </div>
   );

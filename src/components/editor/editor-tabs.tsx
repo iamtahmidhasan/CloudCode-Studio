@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { FileItem } from '@/types';
-import { X, Plus, FileCode, FileText, Globe, Code2 } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 
 interface EditorTabsProps {
   openFiles: FileItem[];
@@ -12,29 +12,8 @@ interface EditorTabsProps {
   onNewFile?: () => void;
 }
 
-export function getFileIcon(filename: string, language?: string) {
-  const ext = filename.split('.').pop()?.toLowerCase() || language;
-  switch (ext) {
-    case 'html':
-      return <Globe className="w-3.5 h-3.5 text-[#e34c26] shrink-0" />;
-    case 'css':
-      return <Code2 className="w-3.5 h-3.5 text-[#264de4] shrink-0" />;
-    case 'js':
-    case 'mjs':
-      return <FileCode className="w-3.5 h-3.5 text-[#f7df1e] shrink-0" />;
-    case 'ts':
-    case 'tsx':
-      return <FileCode className="w-3.5 h-3.5 text-[#3178c6] shrink-0" />;
-    case 'py':
-      return <Code2 className="w-3.5 h-3.5 text-[#3776ab] shrink-0" />;
-    case 'cpp':
-    case 'c':
-    case 'h':
-      return <Code2 className="w-3.5 h-3.5 text-[#659ad2] shrink-0" />;
-    default:
-      return <FileText className="w-3.5 h-3.5 text-[#858585] shrink-0" />;
-  }
-}
+import { getFileIcon } from '@/lib/explorer/tree-utils';
+export { getFileIcon };
 
 export function EditorTabs({
   openFiles,

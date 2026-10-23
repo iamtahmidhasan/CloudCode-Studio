@@ -1,5 +1,5 @@
 import { db, DEFAULT_SETTINGS, DEFAULT_WORKSPACE } from './db';
-import type { Project, FileItem, ProjectTemplate } from '@/types';
+import type { Project, FileItem, FolderItem, ProjectTemplate } from '@/types';
 
 export const SEED_TEMPLATES: Record<
   ProjectTemplate,
@@ -11,20 +11,20 @@ export const SEED_TEMPLATES: Record<
     files: [
       {
         name: 'index.html',
-        path: '/index.html',
+        path: '/Home/Projects/project-a/index.html',
         language: 'html',
         content: `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Browser IDE Web Demo</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Project A - Web Playground</title>
+  <link rel="stylesheet" href="./styles/style.css">
 </head>
 <body>
   <div class="card">
-    <div class="badge">Live Sandbox</div>
-    <h1>Modern Web Playground</h1>
+    <div class="badge">Workspace Root</div>
+    <h1>project-a Sandbox</h1>
     <p class="subtitle">Edit HTML, CSS, and JS with instant browser execution and console output capture.</p>
 
     <div class="counter-box">
@@ -44,13 +44,13 @@ export const SEED_TEMPLATES: Record<
     <div id="status-badge" class="status">Sandbox Ready</div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="./scripts/app.js"></script>
 </body>
 </html>`,
       },
       {
         name: 'style.css',
-        path: '/style.css',
+        path: '/Home/Projects/project-a/styles/style.css',
         language: 'css',
         content: `* {
   box-sizing: border-box;
@@ -216,11 +216,11 @@ h1 {
 }`,
       },
       {
-        name: 'script.js',
-        path: '/script.js',
+        name: 'app.js',
+        path: '/Home/Projects/project-a/scripts/app.js',
         language: 'javascript',
-        content: `// Interactive Playground Script
-console.log("🚀 Web Sandbox initialized successfully!");
+        content: `// Interactive Playground Script for project-a
+console.log("🚀 Project A script running from /Home/Projects/project-a/scripts/app.js");
 
 let count = 0;
 const countEl = document.getElementById("count");
@@ -231,39 +231,74 @@ const logBtn = document.getElementById("log-demo-btn");
 const statusEl = document.getElementById("status-badge");
 
 function updateDisplay() {
-  countEl.textContent = count;
-  countEl.classList.add("bump");
-  setTimeout(() => countEl.classList.remove("bump"), 150);
+  if (countEl) {
+    countEl.textContent = count;
+    countEl.classList.add("bump");
+    setTimeout(() => countEl.classList.remove("bump"), 150);
+  }
 }
 
-incBtn.addEventListener("click", () => {
+incBtn?.addEventListener("click", () => {
   count++;
   updateDisplay();
-  console.log(\`[Counter] Incremented to: \${count}\`);
+  console.log(\`[project-a] Counter: \${count}\`);
 });
 
-decBtn.addEventListener("click", () => {
+decBtn?.addEventListener("click", () => {
   count--;
   updateDisplay();
-  console.log(\`[Counter] Decremented to: \${count}\`);
+  console.log(\`[project-a] Counter: \${count}\`);
 });
 
-resetBtn.addEventListener("click", () => {
+resetBtn?.addEventListener("click", () => {
   count = 0;
   updateDisplay();
-  console.info("[Counter] Reset to zero.");
+  console.info("[project-a] Reset to zero.");
 });
 
-logBtn.addEventListener("click", () => {
-  console.log("ℹ️ Standard log output with an object:", { timestamp: Date.now(), count });
-  console.warn("⚠️ Warning log example: Keep an eye on memory usage.");
-  console.error("❌ Error log example: Sample caught exception simulation.");
-  statusEl.textContent = "Logs sent to IDE Console Panel!";
-  setTimeout(() => {
-    statusEl.textContent = "Sandbox Ready";
-  }, 2500);
+logBtn?.addEventListener("click", () => {
+  console.log("ℹ️ Log from project-a:", { timestamp: Date.now(), count });
+  if (statusEl) {
+    statusEl.textContent = "Logs sent to Console Panel!";
+    setTimeout(() => {
+      statusEl.textContent = "Sandbox Ready";
+    }, 2500);
+  }
 });
 `,
+      },
+      {
+        name: 'main.js',
+        path: '/Home/Projects/project-b/main.js',
+        language: 'javascript',
+        content: `// Project B - Entry Point
+console.log("📦 Project B initialized at /Home/Projects/project-b/main.js");
+
+function calculateStats(items) {
+  return {
+    total: items.length,
+    timestamp: new Date().toISOString()
+  };
+}
+
+console.log("Project B stats:", calculateStats([10, 20, 30]));
+`,
+      },
+      {
+        name: 'index.html',
+        path: '/Home/Templates/starter/index.html',
+        language: 'html',
+        content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Starter Template</title>
+</head>
+<body>
+  <h1>Starter Template</h1>
+  <p>Ready to build something amazing.</p>
+</body>
+</html>`,
       },
     ],
   },
@@ -418,6 +453,391 @@ int main() {
   },
 };
 
+async function updateFolderAndFileDescendantPaths(
+  folderId: string,
+  folderPath: string,
+  allFolders: FolderItem[],
+  allFiles: FileItem[]
+): Promise<void> {
+  const childFolders = allFolders.filter((c) => c.parentId === folderId);
+  for (const child of childFolders) {
+    const childPath = `${folderPath}/${child.name}`;
+    await db.folders.update(child.id, { path: childPath, updatedAt: Date.now() });
+    child.path = childPath;
+    await updateFolderAndFileDescendantPaths(child.id, childPath, allFolders, allFiles);
+  }
+
+  const childFiles = allFiles.filter((f) => f.folderId === folderId);
+  for (const file of childFiles) {
+    const filePath = `${folderPath}/${file.name}`;
+    await db.files.update(file.id, { path: filePath, updatedAt: Date.now() });
+    file.path = filePath;
+  }
+}
+
+export async function ensureHomeHierarchyForProject(projectId: string): Promise<void> {
+  const project = await db.projects.get(projectId);
+  if (!project) return;
+
+  const now = Date.now();
+  const allFolders = await db.folders.where('projectId').equals(projectId).toArray();
+  const allFiles = await db.files.where('projectId').equals(projectId).toArray();
+
+  // 1. Ensure Home folder exists with parentId: null, path: '/Home'
+  let homeFolder = allFolders.find(
+    (f) => f.name.toLowerCase() === 'home' && (!f.parentId || f.path === '/Home')
+  );
+  if (!homeFolder) {
+    homeFolder = allFolders.find((f) => f.name.toLowerCase() === 'home');
+  }
+
+  if (!homeFolder) {
+    const homeFolderId = `folder-home-${projectId}-${Math.random().toString(36).substring(2, 6)}`;
+    homeFolder = {
+      id: homeFolderId,
+      projectId,
+      parentId: null,
+      name: 'Home',
+      path: '/Home',
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.folders.add(homeFolder);
+    allFolders.push(homeFolder);
+  } else if (homeFolder.parentId !== null || homeFolder.path !== '/Home') {
+    await db.folders.update(homeFolder.id, { parentId: null, path: '/Home', updatedAt: now });
+    homeFolder.parentId = null;
+    homeFolder.path = '/Home';
+  }
+
+  const homeId = homeFolder.id;
+
+  // 2. Move any other existing root folders (parentId === null) to be under Home
+  for (const folder of allFolders) {
+    if (folder.id !== homeId && folder.parentId === null) {
+      const newPath = `/Home/${folder.name}`;
+      await db.folders.update(folder.id, {
+        parentId: homeId,
+        path: newPath,
+        updatedAt: now,
+      });
+      folder.parentId = homeId;
+      folder.path = newPath;
+
+      // Update descendant paths recursively
+      await updateFolderAndFileDescendantPaths(folder.id, newPath, allFolders, allFiles);
+    }
+  }
+
+  // 3. For Web projects (or projects with web files), ensure the full dummy hierarchy exists under Home:
+  // Home/
+  // ├── Projects/
+  // │   ├── project-a/
+  // │   │   ├── index.html
+  // │   │   ├── styles/style.css
+  // │   │   └── scripts/app.js
+  // │   └── project-b/
+  // │       └── main.js
+  // └── Templates/
+  //     └── starter/
+  //         └── index.html
+
+  // Check or create Projects folder
+  let projectsFolder = allFolders.find(
+    (f) => f.parentId === homeId && f.name.toLowerCase() === 'projects'
+  );
+  if (!projectsFolder) {
+    const projectsId = `folder-proj-${projectId}-${Math.random().toString(36).substring(2, 6)}`;
+    projectsFolder = {
+      id: projectsId,
+      projectId,
+      parentId: homeId,
+      name: 'Projects',
+      path: '/Home/Projects',
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.folders.add(projectsFolder);
+    allFolders.push(projectsFolder);
+  }
+
+  // Check or create Templates folder
+  let templatesFolder = allFolders.find(
+    (f) => f.parentId === homeId && f.name.toLowerCase() === 'templates'
+  );
+  if (!templatesFolder) {
+    const templatesId = `folder-templ-${projectId}-${Math.random().toString(36).substring(2, 6)}`;
+    templatesFolder = {
+      id: templatesId,
+      projectId,
+      parentId: homeId,
+      name: 'Templates',
+      path: '/Home/Templates',
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.folders.add(templatesFolder);
+    allFolders.push(templatesFolder);
+  }
+
+  // Check or create project-a folder under Projects
+  let projectAFolder = allFolders.find(
+    (f) => f.parentId === projectsFolder!.id && f.name.toLowerCase() === 'project-a'
+  );
+  if (!projectAFolder) {
+    const projectAId = `folder-proja-${projectId}-${Math.random().toString(36).substring(2, 6)}`;
+    projectAFolder = {
+      id: projectAId,
+      projectId,
+      parentId: projectsFolder!.id,
+      name: 'project-a',
+      path: '/Home/Projects/project-a',
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.folders.add(projectAFolder);
+    allFolders.push(projectAFolder);
+  }
+
+  // Check or create styles folder under project-a
+  let stylesFolder = allFolders.find(
+    (f) => f.parentId === projectAFolder!.id && f.name.toLowerCase() === 'styles'
+  );
+  if (!stylesFolder) {
+    const stylesId = `folder-styles-${projectId}-${Math.random().toString(36).substring(2, 6)}`;
+    stylesFolder = {
+      id: stylesId,
+      projectId,
+      parentId: projectAFolder!.id,
+      name: 'styles',
+      path: '/Home/Projects/project-a/styles',
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.folders.add(stylesFolder);
+    allFolders.push(stylesFolder);
+  }
+
+  // Check or create scripts folder under project-a
+  let scriptsFolder = allFolders.find(
+    (f) => f.parentId === projectAFolder!.id && f.name.toLowerCase() === 'scripts'
+  );
+  if (!scriptsFolder) {
+    const scriptsId = `folder-scripts-${projectId}-${Math.random().toString(36).substring(2, 6)}`;
+    scriptsFolder = {
+      id: scriptsId,
+      projectId,
+      parentId: projectAFolder!.id,
+      name: 'scripts',
+      path: '/Home/Projects/project-a/scripts',
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.folders.add(scriptsFolder);
+    allFolders.push(scriptsFolder);
+  }
+
+  // Check or create project-b folder under Projects
+  let projectBFolder = allFolders.find(
+    (f) => f.parentId === projectsFolder!.id && f.name.toLowerCase() === 'project-b'
+  );
+  if (!projectBFolder) {
+    const projectBId = `folder-projb-${projectId}-${Math.random().toString(36).substring(2, 6)}`;
+    projectBFolder = {
+      id: projectBId,
+      projectId,
+      parentId: projectsFolder!.id,
+      name: 'project-b',
+      path: '/Home/Projects/project-b',
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.folders.add(projectBFolder);
+    allFolders.push(projectBFolder);
+  }
+
+  // Check or create starter folder under Templates
+  let starterFolder = allFolders.find(
+    (f) => f.parentId === templatesFolder!.id && f.name.toLowerCase() === 'starter'
+  );
+  if (!starterFolder) {
+    const starterId = `folder-starter-${projectId}-${Math.random().toString(36).substring(2, 6)}`;
+    starterFolder = {
+      id: starterId,
+      projectId,
+      parentId: templatesFolder!.id,
+      name: 'starter',
+      path: '/Home/Templates/starter',
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.folders.add(starterFolder);
+    allFolders.push(starterFolder);
+  }
+
+  // Now ensure dummy files exist in their respective dummy folders:
+  // 1) /Home/Projects/project-a/index.html
+  let indexFile = allFiles.find(
+    (f) => f.folderId === projectAFolder!.id && f.name === 'index.html'
+  );
+  if (!indexFile) {
+    const tmplFile = SEED_TEMPLATES.web.files.find((f) => f.name === 'index.html' && f.path.includes('project-a'));
+    if (tmplFile) {
+      const fileId = `file-proja-html-${now}`;
+      indexFile = {
+        id: fileId,
+        projectId,
+        folderId: projectAFolder!.id,
+        name: 'index.html',
+        path: '/Home/Projects/project-a/index.html',
+        language: 'html',
+        content: tmplFile.content,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await db.files.add(indexFile);
+      allFiles.push(indexFile);
+    }
+  }
+
+  // 2) /Home/Projects/project-a/styles/style.css
+  let cssFile = allFiles.find(
+    (f) => f.folderId === stylesFolder!.id && f.name === 'style.css'
+  );
+  if (!cssFile) {
+    const tmplFile = SEED_TEMPLATES.web.files.find((f) => f.name === 'style.css');
+    if (tmplFile) {
+      cssFile = {
+        id: `file-proja-css-${now}`,
+        projectId,
+        folderId: stylesFolder!.id,
+        name: 'style.css',
+        path: '/Home/Projects/project-a/styles/style.css',
+        language: 'css',
+        content: tmplFile.content,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await db.files.add(cssFile);
+      allFiles.push(cssFile);
+    }
+  }
+
+  // 3) /Home/Projects/project-a/scripts/app.js
+  let jsFile = allFiles.find(
+    (f) => f.folderId === scriptsFolder!.id && f.name === 'app.js'
+  );
+  if (!jsFile) {
+    const tmplFile = SEED_TEMPLATES.web.files.find((f) => f.name === 'app.js');
+    if (tmplFile) {
+      jsFile = {
+        id: `file-proja-js-${now}`,
+        projectId,
+        folderId: scriptsFolder!.id,
+        name: 'app.js',
+        path: '/Home/Projects/project-a/scripts/app.js',
+        language: 'javascript',
+        content: tmplFile.content,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await db.files.add(jsFile);
+      allFiles.push(jsFile);
+    }
+  }
+
+  // 4) /Home/Projects/project-b/main.js
+  let mainJsFile = allFiles.find(
+    (f) => f.folderId === projectBFolder!.id && f.name === 'main.js'
+  );
+  if (!mainJsFile) {
+    const tmplFile = SEED_TEMPLATES.web.files.find((f) => f.name === 'main.js');
+    if (tmplFile) {
+      mainJsFile = {
+        id: `file-projb-js-${now}`,
+        projectId,
+        folderId: projectBFolder!.id,
+        name: 'main.js',
+        path: '/Home/Projects/project-b/main.js',
+        language: 'javascript',
+        content: tmplFile.content,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await db.files.add(mainJsFile);
+      allFiles.push(mainJsFile);
+    }
+  }
+
+  // 5) /Home/Templates/starter/index.html
+  let starterHtmlFile = allFiles.find(
+    (f) => f.folderId === starterFolder!.id && f.name === 'index.html'
+  );
+  if (!starterHtmlFile) {
+    const tmplFile = SEED_TEMPLATES.web.files.find((f) => f.name === 'index.html' && f.path.includes('starter'));
+    if (tmplFile) {
+      starterHtmlFile = {
+        id: `file-starter-html-${now}`,
+        projectId,
+        folderId: starterFolder!.id,
+        name: 'index.html',
+        path: '/Home/Templates/starter/index.html',
+        language: 'html',
+        content: tmplFile.content,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await db.files.add(starterHtmlFile);
+      allFiles.push(starterHtmlFile);
+    }
+  }
+
+  // Clean up legacy loose root files if the project-a files exist:
+  const looseFiles = allFiles.filter((f) => f.folderId === null);
+  for (const lf of looseFiles) {
+    if (lf.name === 'index.html' || lf.name === 'style.css' || lf.name === 'app.js') {
+      await db.files.delete(lf.id);
+    }
+  }
+
+  // Ensure expandedFolderIds includes Home, Projects, project-a, Templates
+  const ws = await db.workspace.get('current');
+  if (ws) {
+    const expanded = new Set(ws.expandedFolderIds || []);
+    expanded.add(homeFolder.id);
+    expanded.add(projectsFolder!.id);
+    expanded.add(projectAFolder!.id);
+    expanded.add(templatesFolder!.id);
+
+    let activeFileId = ws.activeFileId;
+    const fileExists = activeFileId ? await db.files.get(activeFileId) : null;
+    if (!fileExists && indexFile) {
+      activeFileId = indexFile.id;
+    }
+
+    const openFileIds = ws.openFileIds || [];
+    const validOpenFileIds = (
+      await Promise.all(openFileIds.map(async (id) => ((await db.files.get(id)) ? id : null)))
+    ).filter(Boolean) as string[];
+
+    if (activeFileId && !validOpenFileIds.includes(activeFileId)) {
+      validOpenFileIds.push(activeFileId);
+    }
+
+    // Default activeWorkspaceRootId to projectAFolder so that opening the editor opens project-a directly, hiding parent folders!
+    const activeWorkspaceRootId = ws.activeWorkspaceRootId || projectAFolder!.id;
+    const activeWorkspaceName = ws.activeWorkspaceName || projectAFolder!.name;
+
+    await db.workspace.update('current', {
+      expandedFolderIds: Array.from(expanded),
+      activeFileId,
+      activeWorkspaceRootId,
+      activeWorkspaceName,
+      openFileIds: validOpenFileIds.length > 0 ? validOpenFileIds : (activeFileId ? [activeFileId] : []),
+    });
+  }
+}
+
 export async function seedInitialDataIfNeeded(): Promise<{ activeProjectId: string; activeFileId: string }> {
   // Check if projects table has any data
   const projectCount = await db.projects.count();
@@ -428,9 +848,17 @@ export async function seedInitialDataIfNeeded(): Promise<{ activeProjectId: stri
       allProjects.find((p) => p.id === lastWorkspace?.activeProjectId) ||
       allProjects.sort((a, b) => b.lastOpenedAt - a.lastOpenedAt)[0];
 
+    // Ensure all web projects (and active project) have their dummy folders moved under Home
+    for (const proj of allProjects) {
+      if (proj.template === 'web' || proj.id === activeProject.id) {
+        await ensureHomeHierarchyForProject(proj.id);
+      }
+    }
+
+    const updatedWorkspace = await db.workspace.get('current');
     const projectFiles = await db.files.where('projectId').equals(activeProject.id).toArray();
     const activeFile =
-      projectFiles.find((f) => f.id === lastWorkspace?.activeFileId) || projectFiles[0];
+      projectFiles.find((f) => f.id === updatedWorkspace?.activeFileId) || projectFiles[0];
 
     return {
       activeProjectId: activeProject.id,
@@ -463,12 +891,44 @@ export async function seedInitialDataIfNeeded(): Promise<{ activeProjectId: stri
     await db.projects.add(project);
 
     let firstFileIdForProject = '';
+    const folderMap = new Map<string, string>();
     for (let j = 0; j < template.files.length; j++) {
       const fileData = template.files[j];
+      let folderId: string | null = null;
+
+      if (fileData.path && fileData.path.includes('/')) {
+        const parts = fileData.path.split('/').filter(Boolean);
+        if (parts.length > 1) {
+          parts.pop(); // remove filename
+          let currentPath = '';
+          let parentId: string | null = null;
+          for (const part of parts) {
+            currentPath += '/' + part;
+            let existingFolderId = folderMap.get(currentPath);
+            if (!existingFolderId) {
+              existingFolderId = `folder-${now}-${Math.random().toString(36).substring(2, 6)}`;
+              folderMap.set(currentPath, existingFolderId);
+              await db.folders.add({
+                id: existingFolderId,
+                projectId,
+                parentId,
+                name: part,
+                path: currentPath,
+                createdAt: now + j,
+                updatedAt: now + j,
+              });
+            }
+            parentId = existingFolderId;
+          }
+          folderId = parentId;
+        }
+      }
+
       const fileId = `file-${templateKey}-${j}-${now}`;
       const file: FileItem = {
         id: fileId,
         projectId,
+        folderId,
         name: fileData.name,
         path: fileData.path,
         language: fileData.language,
@@ -495,6 +955,10 @@ export async function seedInitialDataIfNeeded(): Promise<{ activeProjectId: stri
     openFileIds: [defaultActiveFileId],
     lastUpdatedAt: now,
   });
+
+  if (defaultActiveProjectId) {
+    await ensureHomeHierarchyForProject(defaultActiveProjectId);
+  }
 
   return {
     activeProjectId: defaultActiveProjectId,

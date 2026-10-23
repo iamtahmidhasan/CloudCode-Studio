@@ -4,13 +4,26 @@ export type SupportedLanguage =
   | 'javascript'
   | 'typescript'
   | 'python'
-  | 'cpp';
+  | 'cpp'
+  | 'json'
+  | 'markdown';
 
 export type ProjectTemplate = 'web' | 'typescript' | 'python' | 'cpp' | 'empty';
+
+export interface FolderItem {
+  id: string;
+  projectId: string;
+  parentId: string | null;
+  name: string;
+  path: string;
+  createdAt: number;
+  updatedAt: number;
+}
 
 export interface FileItem {
   id: string;
   projectId: string;
+  folderId?: string | null;
   name: string;
   path: string;
   language: SupportedLanguage;
@@ -49,6 +62,9 @@ export interface WorkspaceState {
   activeProjectId: string | null;
   activeFileId: string | null;
   openFileIds: string[];
+  expandedFolderIds: string[];
+  activeWorkspaceRootId: string | null;
+  activeWorkspaceName?: string;
   activePanel: MobileTab;
   isSidebarOpen: boolean;
   isBottomPanelOpen: boolean;

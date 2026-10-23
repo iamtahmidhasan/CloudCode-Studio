@@ -40,7 +40,7 @@ export function useExecution() {
   }, []);
 
   const runCode = useCallback(
-    async (files: FileItem[], activeFile: FileItem) => {
+    async (files: FileItem[], activeFile: FileItem, rootFolderPath: string = '') => {
       if (!activeFile) return;
 
       setStatus('running');
@@ -48,7 +48,7 @@ export function useExecution() {
 
       // If active language is HTML/CSS/JS, generate fresh preview document
       if (['html', 'css', 'javascript'].includes(activeFile.language)) {
-        const doc = buildHtmlPreviewDocument(files);
+        const doc = buildHtmlPreviewDocument(files, activeFile, rootFolderPath);
         setPreviewDoc(doc);
       }
 

@@ -1,14 +1,20 @@
 import type { FileItem, ConsoleMessage, ExecutionResult } from '@/types';
 import type { ExecutionAdapter } from '../types';
+import { resolveWorkspaceRelativePath } from '@/lib/explorer/tree-utils';
 
-export function buildHtmlPreviewDocument(files: FileItem[]): string {
+export function buildHtmlPreviewDocument(
+  files: FileItem[],
+  activeFile?: FileItem,
+  rootFolderPath: string = ''
+): string {
   // Find primary HTML file or fallback to active file
-  const htmlFile = files.find((f) => f.language === 'html') || { content: '<div>No HTML file found</div>' };
+  const htmlFile =
+    (activeFile && activeFile.language === 'html' ? activeFile : null) ||
+    files.find((f) => f.language === 'html') ||
+    { path: '/index.html', content: '<div>No HTML file found</div>' };
+
   const cssFiles = files.filter((f) => f.language === 'css');
   const jsFiles = files.filter((f) => f.language === 'javascript');
-
-  const combinedCss = cssFiles.map((f) => `/* ${f.name} */\n${f.content}`).join('\n\n');
-  const combinedJs = jsFiles.map((f) => `/* ${f.name} */\n${f.content}`).join('\n\n');
 
   const consoleInterceptor = `
 <script>
@@ -77,8 +83,55 @@ export function buildHtmlPreviewDocument(files: FileItem[]): string {
     content = `${consoleInterceptor}${content}`;
   }
 
-  // Inject CSS
-  if (combinedCss) {
+  const handledFiles = new Set<string>();
+
+  // 1. Resolve and replace <link rel="stylesheet" href="...">
+  content = content.replace(
+    /<link\s+[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*\/?>|<link\s+[^>]*href=["']([^"']+)["'][^>]*rel=["']stylesheet["'][^>]*\/?>/gi,
+    (match, href1, href2) => {
+      const href = href1 || href2;
+      if (!href) return match;
+
+      const resolved = resolveWorkspaceRelativePath(htmlFile.path, href, rootFolderPath);
+      if (!resolved) {
+        return `<script>console.warn("[Security Boundary] Resource blocked or outside workspace root: ${href}");</script>`;
+      }
+
+      const matchedFile = cssFiles.find((f) => f.path === resolved || f.name === href.split('/').pop());
+      if (matchedFile) {
+        handledFiles.add(matchedFile.id);
+        return `<style data-source="${href}">\n/* Injected: ${matchedFile.name} */\n${matchedFile.content}\n</style>`;
+      }
+
+      return `<script>console.warn("[Preview] Stylesheet not found within workspace: ${href}");</script>`;
+    }
+  );
+
+  // 2. Resolve and replace <script src="...">
+  content = content.replace(
+    /<script\s+[^>]*src=["']([^"']+)["'][^>]*>\s*<\/script>/gi,
+    (match, src) => {
+      if (!src) return match;
+
+      const resolved = resolveWorkspaceRelativePath(htmlFile.path, src, rootFolderPath);
+      if (!resolved) {
+        return `<script>console.warn("[Security Boundary] Script blocked or outside workspace root: ${src}");</script>`;
+      }
+
+      const matchedFile = jsFiles.find((f) => f.path === resolved || f.name === src.split('/').pop());
+      if (matchedFile) {
+        handledFiles.add(matchedFile.id);
+        return `<script data-source="${src}">\ntry {\n${matchedFile.content}\n} catch(err) {\n  console.error(err);\n}\n</script>`;
+      }
+
+      return `<script>console.warn("[Preview] Script not found within workspace: ${src}");</script>`;
+    }
+  );
+
+  // 3. Inject any remaining unhandled CSS files (for instant styling without manual <link> tags)
+  const remainingCss = cssFiles.filter((f) => !handledFiles.has(f.id));
+  if (remainingCss.length > 0) {
+    const combinedCss = remainingCss.map((f) => `/* ${f.name} */\n${f.content}`).join('\n\n');
     const styleTag = `<style id="ide-injected-styles">\n${combinedCss}\n</style>`;
     if (content.includes('</head>')) {
       content = content.replace('</head>', `${styleTag}\n</head>`);
@@ -87,8 +140,10 @@ export function buildHtmlPreviewDocument(files: FileItem[]): string {
     }
   }
 
-  // Inject JS
-  if (combinedJs) {
+  // 4. Inject any remaining unhandled JS files
+  const remainingJs = jsFiles.filter((f) => !handledFiles.has(f.id));
+  if (remainingJs.length > 0) {
+    const combinedJs = remainingJs.map((f) => `/* ${f.name} */\n${f.content}`).join('\n\n');
     const scriptTag = `<script id="ide-injected-scripts">\ntry {\n${combinedJs}\n} catch(err) {\n  console.error(err);\n}\n</script>`;
     if (content.includes('</body>')) {
       content = content.replace('</body>', `${scriptTag}\n</body>`);

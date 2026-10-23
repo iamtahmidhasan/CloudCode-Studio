@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Files, Play, Globe, Terminal, Settings } from 'lucide-react';
+import { Files, Play, Globe, Terminal, Settings, FolderOpen } from 'lucide-react';
 
 interface ActivityBarProps {
   isSidebarOpen: boolean;
   onToggleSidebar: () => void;
+  onOpenWindowsExplorer?: () => void;
   activeBottomTab: 'preview' | 'output';
   onSelectBottomTab: (tab: 'preview' | 'output') => void;
   onOpenSettings: () => void;
@@ -15,6 +16,7 @@ interface ActivityBarProps {
 export function ActivityBar({
   isSidebarOpen,
   onToggleSidebar,
+  onOpenWindowsExplorer,
   activeBottomTab,
   onSelectBottomTab,
   onOpenSettings,
@@ -35,6 +37,18 @@ export function ActivityBar({
         >
           <Files className="w-5 h-5" />
         </button>
+
+        {/* Windows Explorer Full Screen View */}
+        {onOpenWindowsExplorer && (
+          <button
+            type="button"
+            onClick={onOpenWindowsExplorer}
+            className="w-12 h-11 flex items-center justify-center text-[#858585] hover:text-[#38bdf8] transition-colors relative border-l-2 border-transparent"
+            title="Full Screen Windows File Explorer"
+          >
+            <FolderOpen className="w-5 h-5" />
+          </button>
+        )}
 
         {/* Run Code */}
         <button
