@@ -215,7 +215,7 @@ export const ProjectService = {
           });
         } else {
           // If no projects remain, create a clean default
-          await this.createProject('CloudCode Studio', 'web');
+          await this.createProject('Workspace', 'empty');
         }
       }
     });

@@ -378,7 +378,7 @@ export function WorkbenchRoot() {
       <div className="flex h-screen w-screen items-center justify-center bg-[#1e1e1e] text-[#cccccc]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-[#007acc]" />
-          <span className="text-xs font-mono tracking-wider">INITIALIZING CLOUDCODE STUDIO...</span>
+          <span className="text-xs font-mono tracking-wider">INITIALIZING CODE...</span>
         </div>
       </div>
     );
