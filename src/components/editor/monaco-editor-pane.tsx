@@ -246,12 +246,12 @@ export function MonacoEditorPane({
           cursorSmoothCaretAnimation: 'on',
           bracketPairColorization: { enabled: true },
           guides: { bracketPairs: true, indentation: true },
-          acceptSuggestionOnEnter: 'on',
+          acceptSuggestionOnEnter: 'smart',
           tabCompletion: 'on',
-          snippetSuggestions: 'top',
-          suggestSelection: 'first',
+          snippetSuggestions: 'inline',
+          suggestSelection: 'recentlyUsed',
           suggestOnTriggerCharacters: true,
-          quickSuggestionsDelay: 10,
+          quickSuggestionsDelay: 50,
           suggest: {
             preview: true,
             showIcons: true,
@@ -269,7 +269,7 @@ export function MonacoEditorPane({
           quickSuggestions: {
             other: true,
             comments: false,
-            strings: true,
+            strings: false,
           },
           padding: { top: 4, bottom: 4 },
         }}
