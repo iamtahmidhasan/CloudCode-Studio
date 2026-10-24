@@ -48,6 +48,11 @@ export function MonacoEditorPane({
     localEditorRef.current = editorInstance;
     onMountEditor?.(editorInstance);
 
+    // Keybindings: Ctrl+Space / Cmd+Space (Trigger Suggestions / IntelliSense)
+    editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Space, () => {
+      editorInstance.trigger('keyboard', 'editor.action.triggerSuggest', null);
+    });
+
     // Keybindings: Ctrl+S / Cmd+S (Save)
     editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       onSave?.();
@@ -245,9 +250,20 @@ export function MonacoEditorPane({
           tabCompletion: 'on',
           snippetSuggestions: 'top',
           suggestSelection: 'first',
+          suggestOnTriggerCharacters: true,
+          quickSuggestionsDelay: 10,
           suggest: {
             preview: true,
             showIcons: true,
+            showSnippets: true,
+            showWords: true,
+            showFunctions: true,
+            showMethods: true,
+            showKeywords: true,
+            showClasses: true,
+            showVariables: true,
+            showConstants: true,
+            showProperties: true,
             snippetsPreventQuickSuggestions: false,
           },
           quickSuggestions: {

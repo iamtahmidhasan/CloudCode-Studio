@@ -1,10 +1,14 @@
 import type { Monaco } from '@monaco-editor/react';
 import { VSCODE_DARK_PLUS, VSCODE_LIGHT_PLUS } from './monaco-theme';
 import { setupEmmet } from './emmet-provider';
+import { setupCodeSuggestions } from './code-suggestions';
 
 export function initializeMonaco(monaco: Monaco) {
   // Register Emmet and HTML snippet completion providers (! + Enter/Tab)
   setupEmmet(monaco);
+
+  // Register VS Code auto-suggestions and snippet shortcuts for CSS, JS, Python, and C++
+  setupCodeSuggestions(monaco);
 
   // Register themes
   monaco.editor.defineTheme('vscode-dark-plus', VSCODE_DARK_PLUS);

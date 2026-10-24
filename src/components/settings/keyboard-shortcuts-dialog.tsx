@@ -90,6 +90,13 @@ const SHORTCUTS: ShortcutItem[] = [
 
   // Editor
   {
+    id: 'trigger-suggest',
+    category: 'Editor',
+    action: 'Trigger Suggestions / IntelliSense',
+    keys: ['Ctrl', 'Space'],
+    description: 'Trigger auto-suggestions and snippet shortcuts for CSS, JavaScript, Python, C++, and HTML',
+  },
+  {
     id: 'emmet-html-boilerplate',
     category: 'Editor',
     action: 'HTML5 Boilerplate (Emmet)',
