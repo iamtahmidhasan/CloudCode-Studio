@@ -507,17 +507,19 @@ export function WorkbenchRoot() {
                     onSelectTab={openFileInTab}
                     onCloseTab={closeFileTab}
                     onNewFile={() => createFile('newfile.js')}
+                    activeFile={activeFile}
+                    isSaving={isSaving}
+                    onRun={handleRun}
+                    onCancel={cancelExecution}
+                    isRunning={executionStatus === 'running'}
+                    onOpenExplorer={handleOpenWindowsExplorer}
                   />
                   <Breadcrumbs
                     project={activeProject}
                     file={activeFile}
-                    isSaving={isSaving}
                     activeWorkspaceRootId={activeWorkspaceRootId}
                     activeWorkspaceName={activeWorkspaceName}
                     rootFolderPath={rootFolder?.path || ''}
-                    onRun={handleRun}
-                    onCancel={cancelExecution}
-                    isRunning={executionStatus === 'running'}
                     onOpenExplorer={handleOpenWindowsExplorer}
                   />
                   <div className="flex-1 w-full min-h-0 relative overflow-hidden">
@@ -625,19 +627,21 @@ export function WorkbenchRoot() {
                   onSelectTab={openFileInTab}
                   onCloseTab={closeFileTab}
                   onNewFile={() => createFile('newfile.js')}
+                  activeFile={activeFile}
+                  isSaving={isSaving}
+                  onRun={handleRun}
+                  onCancel={cancelExecution}
+                  isRunning={executionStatus === 'running'}
+                  onOpenExplorer={handleOpenWindowsExplorer}
                 />
 
                 {/* Breadcrumbs */}
                 <Breadcrumbs
                   project={activeProject}
                   file={activeFile}
-                  isSaving={isSaving}
                   activeWorkspaceRootId={activeWorkspaceRootId}
                   activeWorkspaceName={activeWorkspaceName}
                   rootFolderPath={rootFolder?.path || ''}
-                  onRun={handleRun}
-                  onCancel={cancelExecution}
-                  isRunning={executionStatus === 'running'}
                   onOpenExplorer={handleOpenWindowsExplorer}
                 />
 
