@@ -39,6 +39,9 @@ import {
   Rows2,
   X,
   Download,
+  Check,
+  RefreshCw,
+  StopCircle,
 } from 'lucide-react';
 import type { MobileTab } from '@/types';
 
@@ -407,6 +410,21 @@ export function WorkbenchRoot() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Autosave status indicator for small screen devices */}
+            <div className="flex items-center gap-1 text-[11px] select-none mr-0.5">
+              {isSaving ? (
+                <span className="flex items-center gap-1 text-amber-400 font-medium">
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                  <span className="text-[10px]">Saving...</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-emerald-500 font-medium">
+                  <Check className="w-3 h-3" />
+                  <span className="text-[10px]">Saved</span>
+                </span>
+              )}
+            </div>
+
             <button
               type="button"
               onClick={() => handleOpenWindowsExplorer()}
@@ -415,14 +433,27 @@ export function WorkbenchRoot() {
             >
               <FolderOpen className="w-4 h-4" />
             </button>
-            <button
-              type="button"
-              onClick={handleRun}
-              className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#0e639c] active:bg-[#1177bb] text-white text-xs font-semibold shadow-sm"
-            >
-              <Play className="w-3.5 h-3.5 fill-current" />
-              <span>Run</span>
-            </button>
+            {executionStatus === 'running' ? (
+              <button
+                type="button"
+                onClick={cancelExecution}
+                className="flex items-center gap-1 px-2.5 py-1 rounded bg-red-600 active:bg-red-700 text-white text-xs font-semibold shadow-sm cursor-pointer"
+                title="Stop Execution"
+              >
+                <StopCircle className="w-3.5 h-3.5" />
+                <span>Stop</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleRun}
+                className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#0e639c] active:bg-[#1177bb] text-white text-xs font-semibold shadow-sm cursor-pointer"
+                title="Run Code"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Run</span>
+              </button>
+            )}
             {isInstallable && (
               <button
                 type="button"

@@ -83,8 +83,8 @@ export function EditorTabs({
         )}
       </div>
 
-      {/* Right Action Buttons: File/Folder button, Save Status, Run/Stop button */}
-      <div className="flex items-center gap-2 px-2.5 h-full shrink-0 bg-[#252526] border-l border-[#333333]">
+      {/* Right Action Buttons: File/Folder button, Save Status, Run/Stop button (hidden on small screens) */}
+      <div className="hidden md:flex items-center gap-2 px-2.5 h-full shrink-0 bg-[#252526] border-l border-[#333333]">
         {onOpenExplorer && (
           <button
             type="button"
