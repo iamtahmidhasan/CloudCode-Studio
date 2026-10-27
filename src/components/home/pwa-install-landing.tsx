@@ -141,10 +141,30 @@ export function PwaInstallLanding() {
         </div>
       </div>
 
-      {/* Minimal Footer */}
-      <footer className="absolute bottom-0 left-0 right-0 z-20 pb-[max(1.25rem,env(safe-area-inset-bottom,1.25rem))] px-6 pt-3 flex items-center justify-between text-[10px] font-mono text-neutral-600 pointer-events-none">
-        <span>INTERACTIVE ASCII CANVAS</span>
-        <span>CODE V1.0</span>
+      {/* Minimal Responsive Footer */}
+      <footer className="absolute bottom-0 left-0 right-0 z-20 pb-[max(1rem,env(safe-area-inset-bottom,1rem))] px-4 sm:px-6 pt-2 flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-4 text-[10px] sm:text-[11px] font-mono text-neutral-500 pointer-events-none select-none">
+        <span className="hidden sm:block flex-1 text-left text-neutral-600 truncate">
+          INTERACTIVE ASCII CANVAS
+        </span>
+
+        <div className="pointer-events-auto text-center shrink-0">
+          <a
+            href="https://www.tahmidhasan.net"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-neutral-500 hover:text-white transition-colors tracking-wider uppercase inline-flex items-center gap-1.5 cursor-pointer py-1 px-2 rounded-full hover:bg-white/[0.04] active:scale-95 whitespace-nowrap"
+          >
+            <span className="text-neutral-500">Developed by</span>
+            <span className="text-neutral-300 hover:text-white underline decoration-neutral-700 underline-offset-4 font-medium">
+              Tahmid Hassan
+            </span>
+          </a>
+        </div>
+
+        <div className="flex sm:flex-1 items-center justify-between sm:justify-end w-full sm:w-auto text-[9px] sm:text-[10px] text-neutral-600 sm:text-neutral-500 px-2 sm:px-0">
+          <span className="sm:hidden text-neutral-600">ASCII CANVAS</span>
+          <span>CODE V1.0</span>
+        </div>
       </footer>
 
       {/* Minimal & Creative Floating Installation Dialog */}
